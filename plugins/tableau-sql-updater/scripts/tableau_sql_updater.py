@@ -562,10 +562,18 @@ def main():
 
     # --- Resolve credentials ---
     # Precedence: CLI flag > --config file > environment variables > hardcoded default.
-    # Env vars are how Claude Code plugin userConfig values reach this script
-    # (TABLEAU_TOKEN_NAME, TABLEAU_TOKEN_SECRET, etc).
-    site_id = args.site or os.environ.get("TABLEAU_SITE_ID") or "cars"
-    server_url = args.server or os.environ.get("TABLEAU_SERVER_URL") or "https://us-west-2b.online.tableau.com"
+    # Env vars are checked under two names so the script works both standalone
+    # (TABLEAU_TOKEN_NAME, ...) and inside a Claude Code plugin runtime
+    # (CLAUDE_PLUGIN_OPTION_TABLEAU_TOKEN_NAME, ... — auto-injected by the harness).
+    def _env(*names):
+        for n in names:
+            v = os.environ.get(n)
+            if v:
+                return v
+        return None
+
+    site_id = args.site or _env("TABLEAU_SITE_ID", "CLAUDE_PLUGIN_OPTION_TABLEAU_SITE_ID") or "cars"
+    server_url = args.server or _env("TABLEAU_SERVER_URL", "CLAUDE_PLUGIN_OPTION_TABLEAU_SERVER_URL") or "https://us-west-2b.online.tableau.com"
     token_name = args.token_name
     token_value = args.token_value
 
@@ -584,13 +592,14 @@ def main():
         if not args.server:
             server_url = site_cfg.get("server_url", server_url)
 
-    token_name = token_name or os.environ.get("TABLEAU_TOKEN_NAME")
-    token_value = token_value or os.environ.get("TABLEAU_TOKEN_SECRET")
+    token_name = token_name or _env("TABLEAU_TOKEN_NAME", "CLAUDE_PLUGIN_OPTION_TABLEAU_TOKEN_NAME")
+    token_value = token_value or _env("TABLEAU_TOKEN_SECRET", "CLAUDE_PLUGIN_OPTION_TABLEAU_TOKEN_SECRET")
 
     if not token_name or not token_value:
         parser.error(
             "Provide credentials via --config, --token-name/--token-value, "
-            "or TABLEAU_TOKEN_NAME/TABLEAU_TOKEN_SECRET env vars"
+            "TABLEAU_TOKEN_NAME/TABLEAU_TOKEN_SECRET env vars (standalone), "
+            "or enable the plugin in Claude Code so CLAUDE_PLUGIN_OPTION_TABLEAU_* are set."
         )
 
     # --- Resolve database credentials ---
@@ -603,8 +612,8 @@ def main():
         db_username = db_username or db_cfg.get("username")
         db_password = db_password or db_cfg.get("password")
 
-    db_username = db_username or os.environ.get("REDSHIFT_USER")
-    db_password = db_password or os.environ.get("REDSHIFT_PASSWORD")
+    db_username = db_username or _env("REDSHIFT_USER", "CLAUDE_PLUGIN_OPTION_REDSHIFT_USER")
+    db_password = db_password or _env("REDSHIFT_PASSWORD", "CLAUDE_PLUGIN_OPTION_REDSHIFT_PASSWORD")
 
     # --- Validate action ---
     if not args.custom_sql_file and not args.initial_sql_file \
