@@ -275,6 +275,60 @@ def validate_custom_sql(root: ET.Element, expected_sql: str,
     return mismatches == 0, messages
 
 
+def _slugify(name: str) -> str:
+    """Lowercase, spaces → underscores, strip non-[a-z0-9_-] for safe filenames."""
+    s = re.sub(r"\s+", "_", name.strip().lower())
+    s = re.sub(r"[^a-z0-9_-]", "", s)
+    return s or "datasource"
+
+
+def dump_sql_to_dir(root: ET.Element, target_name: str, output_dir: str) -> list[str]:
+    """
+    Write every Initial SQL and Custom SQL relation to .sql files under output_dir.
+    Returns the list of file paths written.
+
+    Files: <slug>_initial.sql, <slug>_custom.sql (or <slug>_custom_<n>.sql when
+    multiple distinct Custom SQL relations exist — the duplicates that come from
+    the physical+logical layer are deduped first).
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    slug = _slugify(target_name)
+    written = []
+
+    for conn in root.iter("connection"):
+        s = conn.get("one-time-sql")
+        if s and s.strip():
+            path = os.path.join(output_dir, f"{slug}_initial.sql")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(s.strip() + "\n")
+            written.append(path)
+            break
+
+    seen: dict[str, str] = {}
+    for rel in root.iter("relation"):
+        if rel.get("type") != "text":
+            continue
+        sql = (rel.text or "").strip()
+        if not sql or sql in seen:
+            continue
+        seen[sql] = rel.get("name", "(unnamed)")
+
+    if len(seen) == 1:
+        sql = next(iter(seen))
+        path = os.path.join(output_dir, f"{slug}_custom.sql")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(sql + "\n")
+        written.append(path)
+    else:
+        for i, sql in enumerate(seen, 1):
+            path = os.path.join(output_dir, f"{slug}_custom_{i}.sql")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(sql + "\n")
+            written.append(path)
+
+    return written
+
+
 def inspect_datasource(zip_path: str):
     """Print a summary of the data source's SQL configuration."""
     tds_name = find_tds_in_zip(zip_path)
@@ -494,6 +548,10 @@ def main():
                         help="Path to .sql file; download datasource and verify each "
                              "Custom SQL relation matches this file (whitespace-normalized). "
                              "Exits 0 on match, 1 on mismatch.")
+    parser.add_argument("--dump-sql",
+                        help="Directory to write the datasource's full Initial SQL and "
+                             "Custom SQL into as .sql files. Read-only. Filenames are "
+                             "<slug>_initial.sql and <slug>_custom.sql.")
     parser.add_argument("--dry-run", action="store_true",
                         help="Modify locally but do NOT publish back")
     parser.add_argument("--output-dir", help="Save modified file to this directory")
@@ -551,9 +609,11 @@ def main():
     # --- Validate action ---
     if not args.custom_sql_file and not args.initial_sql_file \
        and not args.inspect_only and not args.remove_initial_sql \
-       and not args.switch_to_table and not args.validate_sql:
+       and not args.switch_to_table and not args.validate_sql \
+       and not args.dump_sql:
         parser.error("Provide at least one of: --custom-sql-file, --initial-sql-file, "
-                     "--remove-initial-sql, --switch-to-table, --validate-sql, or --inspect-only")
+                     "--remove-initial-sql, --switch-to-table, --validate-sql, "
+                     "--dump-sql, or --inspect-only")
 
     # Determine mode: workbook vs datasource
     workbook_mode = bool(args.workbook_name or args.workbook_id or args.local_twbx)
@@ -601,7 +661,22 @@ def main():
             inspect_datasource(zip_path)
         return
 
-    # --- Step 2b: Validate Custom SQL against an expected file ---
+    # --- Step 2b: Dump full SQL to local files (read-only) ---
+    if args.dump_sql:
+        xml_name = find_twb_in_zip(zip_path) if workbook_mode else find_tds_in_zip(zip_path)
+        tree, _ = parse_xml_from_zip(zip_path, xml_name)
+        target_name = args.datasource_name or args.workbook_name or args.datasource_id or args.workbook_id or "datasource"
+        written = dump_sql_to_dir(tree.getroot(), target_name, args.dump_sql)
+        if not written:
+            print("No Initial SQL or Custom SQL found on this datasource.")
+        else:
+            print(f"\nWrote {len(written)} file(s) to {args.dump_sql}:")
+            for p in written:
+                size = os.path.getsize(p)
+                print(f"  {p} ({size} bytes)")
+        return
+
+    # --- Step 2c: Validate Custom SQL against an expected file ---
     if args.validate_sql:
         xml_name = find_twb_in_zip(zip_path) if workbook_mode else find_tds_in_zip(zip_path)
         tree, _ = parse_xml_from_zip(zip_path, xml_name)

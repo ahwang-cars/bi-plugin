@@ -37,7 +37,8 @@ On install, Claude prompts for the `userConfig` values listed below. They're sto
 | Surface | Type | Purpose |
 |---|---|---|
 | `tableau-sql-updater` | Skill | Multi-step ticket-driven workflow: confirm target → save SQL to `sql/<TICKET>.sql` → dry-run → publish → validate. Triggered by natural-language asks like "update the SQL on datasource X". |
-| `/tableau-sql-updater:inspect-sql` | Slash command | One-shot read of current Custom + Initial SQL on a datasource. |
+| `/tableau-sql-updater:inspect-sql` | Slash command | One-shot read of current Custom + Initial SQL on a datasource (500-char preview). |
+| `/tableau-sql-updater:dump-sql` | Slash command | Download and write full Initial + Custom SQL to local .sql files for editing or audit. |
 | `/tableau-sql-updater:validate-sql` | Slash command | Diff a local SQL file against the live datasource. Exits 1 on mismatch. |
 
 The skill writes ticket-scoped SQL to `sql/<TICKET>.sql` in your **current working directory**, never into the plugin install. Commit those files to whatever repo you use for SQL audit trail.
@@ -98,8 +99,11 @@ python scripts/tableau_sql_updater.py --config my-config.json \
 
 Common operations:
 ```bash
-# Inspect
+# Inspect (500-char preview)
 python scripts/tableau_sql_updater.py --datasource-name "X" --inspect-only
+
+# Dump full Initial + Custom SQL to ./sql/
+python scripts/tableau_sql_updater.py --datasource-name "X" --dump-sql ./sql
 
 # Update Custom SQL (dry-run, then publish)
 python scripts/tableau_sql_updater.py --datasource-name "X" --custom-sql-file sql/TICKET.sql --dry-run

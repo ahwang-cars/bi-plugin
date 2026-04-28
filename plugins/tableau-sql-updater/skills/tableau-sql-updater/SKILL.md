@@ -33,7 +33,8 @@ User says things like:
 Default site is `cars`. Other site in scope: `dealertools`.
 
 For one-shot read-only operations users will more often invoke the slash commands directly:
-- `/tableau-sql-updater:inspect-sql <datasource>` — show current SQL
+- `/tableau-sql-updater:inspect-sql <datasource>` — show current SQL (truncated 500-char preview)
+- `/tableau-sql-updater:dump-sql <datasource> [output-dir]` — write full Initial + Custom SQL to local .sql files
 - `/tableau-sql-updater:validate-sql <ticket-or-file>` — diff against committed file
 
 This skill owns the multi-step *write* workflow.
@@ -62,13 +63,22 @@ PY=$(${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh)
 
 ## Commands
 
-### Inspect current SQL
+### Inspect current SQL (preview)
 ```bash
 PY=$(${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh)
 "$PY" "${CLAUDE_PLUGIN_ROOT}/scripts/tableau_sql_updater.py" \
   --site <cars|dealertools> \
   --datasource-name "<Datasource Name>" --inspect-only
 ```
+
+### Dump full SQL to files
+```bash
+PY=$(${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh)
+"$PY" "${CLAUDE_PLUGIN_ROOT}/scripts/tableau_sql_updater.py" \
+  --site <cars|dealertools> \
+  --datasource-name "<Datasource Name>" --dump-sql ./sql
+```
+Writes `<slug>_initial.sql` and `<slug>_custom.sql` (or `_custom_1.sql`/`_custom_2.sql` for multiple distinct relations) into `./sql`. Read-only.
 
 ### Update Custom SQL (dry-run, then publish)
 ```bash
@@ -125,6 +135,7 @@ Swap `--datasource-name` for `--workbook-name` for workbook targets (same flags 
 | `--switch-to-table` | Replace Custom SQL with a direct table ref (`schema.table`) |
 | `--relation-name` | Only update the relation with this exact name |
 | `--validate-sql` | Download and diff Custom SQL against a file (exit 1 on mismatch) |
+| `--dump-sql` | Download and write full Initial + Custom SQL to .sql files in this directory |
 | `--inspect-only` | Print current SQL; no changes |
 | `--dry-run` | Modify locally but do NOT publish |
 | `--output-dir` | Save the modified `.tdsx` locally |
