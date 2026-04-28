@@ -12,16 +12,12 @@ Two ways to use it: as a Claude Code plugin (smooth UX) or as a standalone Pytho
 
 ---
 
-## Option A: Claude Code / Cowork
-
-**Claude Code (terminal, self-serve):**
+## Option A: Claude Code plugin
 
 ```
 /plugin marketplace add ahwang-cars/bi-plugin
 /plugin install tableau-sql-updater@bi-plugin
 ```
-
-**Cowork (desktop, admin-mediated):** Cowork has no `/plugin` slash command. An org admin adds `ahwang-cars/bi-plugin` via Organization settings → Plugins → Add plugin → GitHub, then sets the state (Available / Installed by default / Required). End users then open the **Customize** sidebar → **Browse plugins** modal to install. See the [top-level README](../../README.md) for the full Cowork flow.
 
 On install, Claude prompts for the `userConfig` values listed below. They're stored securely and injected as env vars when commands run. The Python venv is auto-bootstrapped on first use.
 
