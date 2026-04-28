@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[codz]
+*.so
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Credentials (legacy — current plugin uses userConfig)
+config.json
+config.local.json
+.env
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Local plugin data (only relevant if testing a plugin from this dir)
+.claude-plugin-data/

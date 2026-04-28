@@ -1,0 +1,16 @@
+{
+  "name": "bi-plugin",
+  "owner": {
+    "name": "Cars Commerce BI",
+    "email": "ahwang@carscommerce.inc"
+  },
+  "plugins": [
+    {
+      "name": "tableau-sql-updater",
+      "source": "./plugins/tableau-sql-updater",
+      "description": "Update and validate Tableau Online Custom SQL and Initial SQL via REST API, no Tableau Desktop round-trip.",
+      "category": "data-tools",
+      "keywords": ["tableau", "sql", "datasource", "redshift"]
+    }
+  ]
+}

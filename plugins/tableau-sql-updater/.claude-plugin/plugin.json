@@ -1,0 +1,38 @@
+{
+  "name": "tableau-sql-updater",
+  "description": "Edit and validate Tableau datasource Custom SQL / Initial SQL without Tableau Desktop.",
+  "author": {
+    "name": "Cars Commerce BI"
+  },
+  "keywords": ["tableau", "sql", "datasource", "redshift", "bi"],
+  "userConfig": {
+    "tableau_server_url": {
+      "type": "string",
+      "description": "Tableau Online server URL (e.g. https://us-west-2b.online.tableau.com)",
+      "default": "https://us-west-2b.online.tableau.com"
+    },
+    "tableau_site_id": {
+      "type": "string",
+      "description": "Default Tableau site content URL (e.g. cars or dealertools)",
+      "default": "cars"
+    },
+    "tableau_token_name": {
+      "type": "string",
+      "description": "Tableau Personal Access Token name"
+    },
+    "tableau_token_secret": {
+      "type": "string",
+      "description": "Tableau Personal Access Token secret",
+      "sensitive": true
+    },
+    "redshift_user": {
+      "type": "string",
+      "description": "Redshift username embedded into the .tdsx for connection auth"
+    },
+    "redshift_password": {
+      "type": "string",
+      "description": "Redshift password embedded into the .tdsx for connection auth",
+      "sensitive": true
+    }
+  }
+}
