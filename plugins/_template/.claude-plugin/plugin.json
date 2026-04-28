@@ -2,7 +2,7 @@
   "name": "TODO-plugin-name",
   "description": "TODO one-line description (shown in /plugin manager).",
   "author": {
-    "name": "Cars Commerce BI"
+    "name": "Cars BI"
   },
   "keywords": ["TODO"],
   "userConfig": {}

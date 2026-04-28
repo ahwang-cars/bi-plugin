@@ -2,7 +2,7 @@
   "name": "tableau-sql-updater",
   "description": "Edit and validate Tableau datasource Custom SQL / Initial SQL without Tableau Desktop.",
   "author": {
-    "name": "Cars Commerce BI"
+    "name": "Cars BI"
   },
   "keywords": ["tableau", "sql", "datasource", "redshift", "bi"],
   "userConfig": {

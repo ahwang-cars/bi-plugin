@@ -1,6 +1,6 @@
 # CLAUDE.md — bi-plugin maintainer notes
 
-This repo is a **Claude Code plugin marketplace** for the Cars Commerce BI team. Each top-level entry under `plugins/` is one plugin, listed in `.claude-plugin/marketplace.json`. Teammates install plugins via `/plugin marketplace add ahwang-cars/bi-plugin`, then `/plugin install <name>@bi-plugin`.
+This repo is a **Claude Code plugin marketplace** for the Cars BI team. Each top-level entry under `plugins/` is one plugin, listed in `.claude-plugin/marketplace.json`. Teammates install plugins via `/plugin marketplace add ahwang-cars/bi-plugin`, then `/plugin install <name>@bi-plugin`.
 
 When you (a maintainer) ask me to do work in this repo, I should default to these conventions:
 

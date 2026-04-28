@@ -1,42 +1,80 @@
 # bi-plugin
 
-Claude Code plugin marketplace for the Cars Commerce BI team. Each plugin in this repo wraps a piece of BI tooling (Tableau, Redshift, etc.) as a skill, slash commands, or both, and ships via the standard Claude Code plugin install flow.
+Cars BI team tooling, packaged for two audiences:
 
-## Install the marketplace
+- **Claude Code / Cowork users** — install via `/plugin` and get skills + slash commands.
+- **Everyone else** — clone the repo and run the underlying scripts directly. No Claude Code needed.
 
-In Claude Code:
+Each plugin under `plugins/` is built around a self-contained Python (or other-language) script. The plugin metadata is just a UX wrapper.
 
-```
-/plugin marketplace add ahwang-cars/bi-plugin
-```
-
-Then install whichever plugins you want. They're independent — install only what you need.
+---
 
 ## Available plugins
 
-| Plugin | Install command | What it does |
-|---|---|---|
-| `tableau-sql-updater` | `/plugin install tableau-sql-updater@bi-plugin` | Edit and validate Tableau Online Custom SQL / Initial SQL via REST API. Includes the `tableau-sql-updater` workflow skill plus `/tableau-sql-updater:inspect-sql` and `/tableau-sql-updater:validate-sql` commands. |
+| Plugin | What it does |
+|---|---|
+| `tableau-sql-updater` | Edit and validate Tableau Online Custom SQL / Initial SQL via REST API. |
 
-After install, Claude Code will prompt you for any per-user config the plugin needs (e.g. Tableau Personal Access Token). Each user uses their own credentials — there are no shared secrets.
+See each plugin's `README.md` for setup details and prerequisites.
 
-## Update an installed plugin
+---
+
+## Option 1: Install as a Claude Code plugin
+
+In Claude Code or Cowork:
 
 ```
-/plugin update <plugin-name>@bi-plugin
+/plugin marketplace add ahwang-cars/bi-plugin
+/plugin install tableau-sql-updater@bi-plugin
 ```
 
-Plugins in this repo currently auto-update on every commit (no `version` field set). When a plugin stabilizes we'll start pinning SemVer.
+Claude prompts for any per-user config the plugin needs (e.g. Tableau Personal Access Token). Each user uses their own credentials — no shared secrets.
+
+Update later with:
+```
+/plugin update tableau-sql-updater@bi-plugin
+```
+
+Plugins auto-update on every commit while in early dev (no `version` pin yet). Once a plugin stabilizes we'll start pinning SemVer.
+
+---
+
+## Option 2: Run the script directly (no Claude Code)
+
+Clone the repo and run the script in any plugin's `scripts/` directory:
+
+```bash
+git clone https://github.com/ahwang-cars/bi-plugin.git
+cd bi-plugin/plugins/tableau-sql-updater
+python3.12 -m venv venv && source venv/bin/activate
+pip install -r scripts/requirements.txt
+
+# either point at a config.json:
+python scripts/tableau_sql_updater.py --config /path/to/config.json \
+  --datasource-name "<datasource>" --inspect-only
+
+# or set env vars and skip --config:
+export TABLEAU_TOKEN_NAME=... TABLEAU_TOKEN_SECRET=...
+python scripts/tableau_sql_updater.py --datasource-name "<datasource>" --inspect-only
+```
+
+Requires Python 3.10+ (system `python3` on macOS is 3.9.6, too old). Use Homebrew (`brew install python@3.12`) or python.org if needed.
+
+You lose the workflow skill, slash commands, and the auto-managed credential store, but the underlying functionality is identical.
+
+---
 
 ## Contributing
 
-To add a new plugin to this marketplace, see [`docs/adding-a-skill.md`](docs/adding-a-skill.md). The short version:
+To add a new plugin to this marketplace, see [`docs/adding-a-skill.md`](docs/adding-a-skill.md). Short version:
 
 1. `cp -R plugins/_template plugins/<your-plugin>`
 2. Edit `plugin.json`, write `SKILL.md` and/or `commands/*.md`, drop scripts in `scripts/`.
 3. Append your plugin to `.claude-plugin/marketplace.json` and add a row to the table above.
 4. Test locally with `/plugin marketplace add /path/to/this/repo`.
 5. Push.
+
+---
 
 ## Repo layout
 
@@ -45,6 +83,12 @@ bi-plugin/
 ├── .claude-plugin/marketplace.json   # marketplace manifest
 ├── plugins/
 │   ├── tableau-sql-updater/          # first plugin
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── skills/                   # multi-step workflows (Claude-Code-only)
+│   │   ├── commands/                 # slash commands (Claude-Code-only)
+│   │   ├── scripts/                  # the actual tooling (works standalone)
+│   │   └── README.md
 │   └── _template/                    # skeleton — copy to start a new plugin
-└── docs/adding-a-skill.md            # contributor guide
+├── docs/adding-a-skill.md            # contributor guide
+└── CLAUDE.md                         # maintainer notes
 ```
