@@ -5,5 +5,12 @@
     "name": "Cars BI"
   },
   "keywords": ["TODO"],
-  "userConfig": {}
+  "userConfig": {
+    "TODO_example_key": {
+      "title": "TODO short label",
+      "type": "string",
+      "description": "TODO longer explanation shown next to the prompt.",
+      "sensitive": false
+    }
+  }
 }

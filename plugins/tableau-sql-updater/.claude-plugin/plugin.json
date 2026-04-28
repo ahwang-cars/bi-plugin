@@ -7,29 +7,35 @@
   "keywords": ["tableau", "sql", "datasource", "redshift", "bi"],
   "userConfig": {
     "tableau_server_url": {
+      "title": "Tableau server URL",
       "type": "string",
       "description": "Tableau Online server URL (e.g. https://us-west-2b.online.tableau.com)",
       "default": "https://us-west-2b.online.tableau.com"
     },
     "tableau_site_id": {
+      "title": "Tableau site",
       "type": "string",
       "description": "Default Tableau site content URL (e.g. cars or dealertools)",
       "default": "cars"
     },
     "tableau_token_name": {
+      "title": "Tableau PAT name",
       "type": "string",
-      "description": "Tableau Personal Access Token name"
+      "description": "Tableau Personal Access Token name (Tableau Online → My Account Settings → Personal Access Tokens)"
     },
     "tableau_token_secret": {
+      "title": "Tableau PAT secret",
       "type": "string",
       "description": "Tableau Personal Access Token secret",
       "sensitive": true
     },
     "redshift_user": {
+      "title": "Redshift username",
       "type": "string",
       "description": "Redshift username embedded into the .tdsx for connection auth"
     },
     "redshift_password": {
+      "title": "Redshift password",
       "type": "string",
       "description": "Redshift password embedded into the .tdsx for connection auth",
       "sensitive": true
