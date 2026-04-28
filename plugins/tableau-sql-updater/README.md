@@ -7,7 +7,7 @@ Update and validate the Custom SQL or Initial SQL of a Tableau Online datasource
 From inside Claude Code:
 
 ```
-/plugin marketplace add <github-org>/bi-plugin
+/plugin marketplace add ahwang-cars/bi-plugin
 /plugin install tableau-sql-updater@bi-plugin
 ```
 

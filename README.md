@@ -7,7 +7,7 @@ Claude Code plugin marketplace for the Cars Commerce BI team. Each plugin in thi
 In Claude Code:
 
 ```
-/plugin marketplace add <github-org>/bi-plugin
+/plugin marketplace add ahwang-cars/bi-plugin
 ```
 
 Then install whichever plugins you want. They're independent — install only what you need.
