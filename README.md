@@ -2,7 +2,7 @@
 
 Cars BI team tooling, packaged for two audiences:
 
-- **Claude Code / Cowork users** — install via `/plugin` and get skills + slash commands.
+- **Claude Code / Cowork users** — install as a plugin and get skills + slash commands. (Self-serve in Claude Code; admin-mediated in Cowork — see below.)
 - **Everyone else** — clone the repo and run the underlying scripts directly. No Claude Code needed.
 
 Each plugin under `plugins/` is built around a self-contained Python (or other-language) script. The plugin metadata is just a UX wrapper.
@@ -19,9 +19,9 @@ See each plugin's `README.md` for setup details and prerequisites.
 
 ---
 
-## Option 1: Install as a Claude Code plugin
+## Option 1a: Install in Claude Code (terminal, self-serve)
 
-In Claude Code or Cowork:
+In Claude Code:
 
 ```
 /plugin marketplace add ahwang-cars/bi-plugin
@@ -30,12 +30,22 @@ In Claude Code or Cowork:
 
 Claude prompts for any per-user config the plugin needs (e.g. Tableau Personal Access Token). Each user uses their own credentials — no shared secrets.
 
-Update later with:
-```
-/plugin update tableau-sql-updater@bi-plugin
-```
+Update later with `/plugin update tableau-sql-updater@bi-plugin`. Plugins auto-update on every commit while in early dev (no `version` pin yet); once a plugin stabilizes we'll start pinning SemVer.
 
-Plugins auto-update on every commit while in early dev (no `version` pin yet). Once a plugin stabilizes we'll start pinning SemVer.
+## Option 1b: Install in Claude Cowork (desktop, admin-mediated)
+
+Cowork doesn't have a `/plugin` slash command — plugin management is gated to org admins via the settings UI.
+
+**Admin (one-time):**
+1. Organization settings → **Plugins** → **Add plugin** → **GitHub**.
+2. Enter `ahwang-cars/bi-plugin`.
+3. Set the plugin's state: *Available* (members opt in), *Installed by default* (auto-on, can uninstall), *Required* (auto-on, can't disable), or *Not available*.
+
+**End user (after admin enables):**
+- Open the **Customize** sidebar → **Browse plugins** modal to self-install (if *Available*), or it's already on (if *Installed by default* / *Required*).
+- Plugin skills and commands appear under `/` or `+` once installed, namespaced under the plugin.
+
+If you don't have an admin willing to add this org-wide, fall back to Option 2 (clone and run the script).
 
 ---
 
