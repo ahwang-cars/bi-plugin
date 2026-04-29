@@ -19,11 +19,23 @@ Two ways to use it: as a Claude Code plugin (smooth UX) or as a standalone Pytho
 /plugin install tableau-sql-updater@bi-plugin
 ```
 
-On install, Claude prompts for the `userConfig` values listed below. They're stored securely and injected as env vars when commands run. The Python venv is auto-bootstrapped on first use.
+On install, Claude prompts for the `userConfig` values listed below. The Python venv is auto-bootstrapped on first use.
 
-### userConfig
+### Credentials setup (required)
 
-One PAT pair per site (cars and dealertools) — generate each in the corresponding Tableau Online site. The skill asks which site to target on each invocation. Server URL is hardcoded (`https://us-west-2b.online.tableau.com`).
+The Claude Code harness does not currently propagate plugin `userConfig` env vars into the bash that slash commands run, so each command's Run block reads creds from a JSON config file instead. The schema matches the standalone-CLI config (see Option B below).
+
+Lookup order:
+
+1. `$TABLEAU_CONFIG` env var, if set
+2. `~/.tableau-config.json`
+3. `~/sql-updater/config.json` (legacy location — kept for back-compat with the pre-plugin standalone setup)
+
+Create the file at one of those paths (and `chmod 600`). One PAT pair per site (cars and dealertools) — generate each in the corresponding Tableau Online site at Settings → My Account Settings → Personal Access Tokens. Server URL is hardcoded (`https://us-west-2b.online.tableau.com`). The skill asks which site to target on each invocation. See the example JSON under "Option B → Via a config.json" further down.
+
+### userConfig (cosmetic — see note above)
+
+The `/plugin` config UI exposes these keys, but the values currently are not reaching the slash command runtime. They're listed here for reference and to keep the schema accurate:
 
 | Key | Sensitive | Notes |
 |---|---|---|
@@ -134,7 +146,8 @@ What you give up vs. Option A: the auto-invoked workflow (Claude makes decisions
 
 ## Troubleshooting
 
-- **"Provide credentials via --config..."** — env vars not set and no `--config` passed. Either reconfigure the plugin (Option A) or `export` the variables (Option B).
+- **"Provide credentials via --config..."** or **"No PAT configured for site 'cars'"** — `~/.tableau-creds` is missing or doesn't export the expected variables. See "Credentials setup" above.
+- **"CLAUDE_PLUGIN_DATA env var is required"** — you're running `bootstrap.sh` directly outside a slash command. Use the slash commands instead, or set both `CLAUDE_PLUGIN_ROOT` and `CLAUDE_PLUGIN_DATA` manually before running.
 - **"No datasource found with name: ..."** — the name lookup is case-insensitive but otherwise exact. If ambiguous across projects, use `--datasource-id` (find the UUID in the Tableau Online URL when viewing the datasource).
 - **`TypeError: unsupported operand type(s) for |`** during `tableauserverclient` import — your venv is using Python 3.9. Recreate with `python3.12 -m venv venv`.
 - **Extract refresh fails after publish** — check Bridge connection settings in Tableau Online; embedded credentials may need to be re-saved manually.

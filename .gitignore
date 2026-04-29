@@ -26,3 +26,6 @@ config.local.json
 
 # Local plugin data (only relevant if testing a plugin from this dir)
 .claude-plugin-data/
+
+# Dumped Tableau SQL (user data; written here when bi-plugin checkout is the CWD during testing)
+sql/

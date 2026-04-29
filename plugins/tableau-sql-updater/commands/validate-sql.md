@@ -6,20 +6,41 @@ argument-hint: <datasource-name> <sql-file> [site]
 Validate that the live Custom SQL on a Tableau datasource matches a local file. Use this after a publish (to confirm deploy) or any time someone wants to re-verify prod against the committed ticket SQL.
 
 ## Args
-- `$1` — datasource name (required). Quote if it contains spaces.
-- `$2` — path to the SQL file to compare against (required, e.g. `sql/EASD-2288.sql`). Resolved relative to the user's current working directory.
-- `$3` — site (optional, default `cars`). Either `cars` or `dealertools`.
+- datasource name (required) — first positional. Quote if it contains spaces.
+- sql file path (required) — second positional, e.g. `sql/EASD-2288.sql`. Resolved relative to the user's current working directory.
+- site — third positional, default `cars`. Either `cars` or `dealertools`.
 
-If either `$1` or `$2` is missing, ask the user and exit. If `$2` doesn't exist on disk, say so and exit — don't try to construct one.
+If either is missing, ask the user and exit. If the SQL file doesn't exist on disk, say so and exit — don't try to construct one.
 
 ## Run
 
 ```bash
+# Self-bootstrap plugin paths + locate a config.json. The harness does not propagate
+# userConfig env vars to Bash-tool execution (see plugin README).
+export CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT}"
+export CLAUDE_PLUGIN_DATA="${HOME}/.claude/plugins/data/bi-plugin/tableau-sql-updater"
+
+CONFIG="${TABLEAU_CONFIG:-}"
+if [ -z "$CONFIG" ]; then
+  for c in "${HOME}/.tableau-config.json" "${HOME}/sql-updater/config.json"; do
+    [ -f "$c" ] && CONFIG="$c" && break
+  done
+fi
+CONFIG_FLAG=()
+[ -n "$CONFIG" ] && CONFIG_FLAG=(--config "$CONFIG")
+
+# Wrap the harness substitution in SINGLE quotes so user-typed double quotes
+# don't escape into the surrounding bash. eval re-parses to set positional args.
+# (Use ${N:-...} forms throughout — bare $N gets pre-substituted by the harness.)
+ARGS_RAW='$ARGUMENTS'
+eval set -- $ARGS_RAW
+
 PY=$(${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh)
 "$PY" "${CLAUDE_PLUGIN_ROOT}/scripts/tableau_sql_updater.py" \
+  "${CONFIG_FLAG[@]}" \
   --site "${3:-cars}" \
-  --datasource-name "$1" \
-  --validate-sql "$2"
+  --datasource-name "${1:-}" \
+  --validate-sql "${2:-}"
 ```
 
 ## Output
