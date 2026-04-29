@@ -21,24 +21,28 @@
     "tableau_token_name": {
       "title": "Tableau PAT name",
       "type": "string",
-      "description": "Tableau Personal Access Token name (Tableau Online → My Account Settings → Personal Access Tokens)"
+      "description": "Tableau Personal Access Token name (Tableau Online → My Account Settings → Personal Access Tokens)",
+      "required": true
     },
     "tableau_token_secret": {
       "title": "Tableau PAT secret",
       "type": "string",
       "description": "Tableau Personal Access Token secret",
-      "sensitive": true
+      "sensitive": true,
+      "required": true
     },
     "redshift_user": {
       "title": "Redshift username",
       "type": "string",
-      "description": "Redshift username embedded into the .tdsx for connection auth"
+      "description": "Redshift username embedded into the .tdsx for connection auth",
+      "required": true
     },
     "redshift_password": {
       "title": "Redshift password",
       "type": "string",
       "description": "Redshift password embedded into the .tdsx for connection auth",
-      "sensitive": true
+      "sensitive": true,
+      "required": true
     }
   }
 }
