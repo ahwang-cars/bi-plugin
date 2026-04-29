@@ -6,43 +6,38 @@
   },
   "keywords": ["tableau", "sql", "datasource", "redshift", "bi"],
   "userConfig": {
-    "tableau_server_url": {
-      "title": "Tableau server URL",
+    "tableau_token_name_cars": {
+      "title": "Tableau PAT name (cars site)",
       "type": "string",
-      "description": "Tableau Online server URL (e.g. https://us-west-2b.online.tableau.com)",
-      "default": "https://us-west-2b.online.tableau.com"
+      "description": "Personal Access Token name for the cars site (Tableau Online → My Account Settings → Personal Access Tokens)"
     },
-    "tableau_site_id": {
-      "title": "Tableau site",
+    "tableau_token_secret_cars": {
+      "title": "Tableau PAT secret (cars site)",
       "type": "string",
-      "description": "Default Tableau site content URL (e.g. cars or dealertools)",
-      "default": "cars"
+      "description": "Personal Access Token secret for the cars site",
+      "sensitive": true
     },
-    "tableau_token_name": {
-      "title": "Tableau PAT name",
+    "tableau_token_name_dealertools": {
+      "title": "Tableau PAT name (dealertools site)",
       "type": "string",
-      "description": "Tableau Personal Access Token name (Tableau Online → My Account Settings → Personal Access Tokens)",
-      "required": true
+      "description": "Personal Access Token name for the dealertools site"
     },
-    "tableau_token_secret": {
-      "title": "Tableau PAT secret",
+    "tableau_token_secret_dealertools": {
+      "title": "Tableau PAT secret (dealertools site)",
       "type": "string",
-      "description": "Tableau Personal Access Token secret",
-      "sensitive": true,
-      "required": true
+      "description": "Personal Access Token secret for the dealertools site",
+      "sensitive": true
     },
     "redshift_user": {
       "title": "Redshift username",
       "type": "string",
-      "description": "Redshift username embedded into the .tdsx for connection auth",
-      "required": true
+      "description": "Redshift username embedded into the .tdsx for connection auth"
     },
     "redshift_password": {
       "title": "Redshift password",
       "type": "string",
       "description": "Redshift password embedded into the .tdsx for connection auth",
-      "sensitive": true,
-      "required": true
+      "sensitive": true
     }
   }
 }

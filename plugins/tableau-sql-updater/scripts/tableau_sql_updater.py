@@ -513,9 +513,9 @@ def main():
     creds = parser.add_argument_group("credentials (use --config or explicit flags)")
     creds.add_argument("--config", help="Path to config.json with credentials")
     creds.add_argument("--server", default=None,
-                       help="Tableau Server URL (default: TABLEAU_SERVER_URL env var or https://us-west-2b.online.tableau.com)")
+                       help="Tableau Server URL (default: https://us-west-2b.online.tableau.com)")
     creds.add_argument("--site", default=None,
-                       help="Tableau site content URL (default: TABLEAU_SITE_ID env var or 'cars')")
+                       help="Tableau site content URL: 'cars' or 'dealertools' (default: TABLEAU_SITE_ID env var or 'cars')")
     creds.add_argument("--token-name", help="Personal Access Token name")
     creds.add_argument("--token-value", help="Personal Access Token secret")
 
@@ -562,9 +562,9 @@ def main():
 
     # --- Resolve credentials ---
     # Precedence: CLI flag > --config file > environment variables > hardcoded default.
-    # Env vars are checked under two names so the script works both standalone
-    # (TABLEAU_TOKEN_NAME, ...) and inside a Claude Code plugin runtime
-    # (CLAUDE_PLUGIN_OPTION_TABLEAU_TOKEN_NAME, ... — auto-injected by the harness).
+    # Plugin runtime exposes per-site PAT pairs as
+    # CLAUDE_PLUGIN_OPTION_TABLEAU_TOKEN_{NAME,SECRET}_{CARS,DEALERTOOLS};
+    # standalone CLI uses the single-pair TABLEAU_TOKEN_NAME / TABLEAU_TOKEN_SECRET.
     def _env(*names):
         for n in names:
             v = os.environ.get(n)
@@ -572,8 +572,8 @@ def main():
                 return v
         return None
 
-    site_id = args.site or _env("TABLEAU_SITE_ID", "CLAUDE_PLUGIN_OPTION_TABLEAU_SITE_ID") or "cars"
-    server_url = args.server or _env("TABLEAU_SERVER_URL", "CLAUDE_PLUGIN_OPTION_TABLEAU_SERVER_URL") or "https://us-west-2b.online.tableau.com"
+    site_id = args.site or _env("TABLEAU_SITE_ID") or "cars"
+    server_url = args.server or "https://us-west-2b.online.tableau.com"
     token_name = args.token_name
     token_value = args.token_value
 
@@ -592,14 +592,21 @@ def main():
         if not args.server:
             server_url = site_cfg.get("server_url", server_url)
 
-    token_name = token_name or _env("TABLEAU_TOKEN_NAME", "CLAUDE_PLUGIN_OPTION_TABLEAU_TOKEN_NAME")
-    token_value = token_value or _env("TABLEAU_TOKEN_SECRET", "CLAUDE_PLUGIN_OPTION_TABLEAU_TOKEN_SECRET")
+    plugin_suffix = site_id.upper()
+    token_name = token_name or _env(
+        "TABLEAU_TOKEN_NAME",
+        f"CLAUDE_PLUGIN_OPTION_TABLEAU_TOKEN_NAME_{plugin_suffix}",
+    )
+    token_value = token_value or _env(
+        "TABLEAU_TOKEN_SECRET",
+        f"CLAUDE_PLUGIN_OPTION_TABLEAU_TOKEN_SECRET_{plugin_suffix}",
+    )
 
     if not token_name or not token_value:
         parser.error(
-            "Provide credentials via --config, --token-name/--token-value, "
-            "TABLEAU_TOKEN_NAME/TABLEAU_TOKEN_SECRET env vars (standalone), "
-            "or enable the plugin in Claude Code so CLAUDE_PLUGIN_OPTION_TABLEAU_* are set."
+            f"No PAT configured for site '{site_id}'. Provide --token-name/--token-value, "
+            f"--config, TABLEAU_TOKEN_NAME/TABLEAU_TOKEN_SECRET env vars (standalone), "
+            f"or configure the plugin's '{site_id}' PAT pair in Claude Code."
         )
 
     # --- Resolve database credentials ---

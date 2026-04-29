@@ -10,7 +10,7 @@ Programmatically edit a Tableau Online data source's Custom SQL or Initial SQL v
 ## Prerequisites (handled by the plugin)
 
 - Python 3.9+ on PATH.
-- Credentials configured via plugin `userConfig` at install time (`tableau_token_name`, `tableau_token_secret`, `redshift_user`, `redshift_password`). These are injected as env vars (`TABLEAU_TOKEN_NAME`, `TABLEAU_TOKEN_SECRET`, `REDSHIFT_USER`, `REDSHIFT_PASSWORD`) when commands run.
+- Credentials configured via plugin `userConfig`: per-site Tableau PAT pairs (`tableau_token_name_cars` / `tableau_token_secret_cars`, `tableau_token_name_dealertools` / `tableau_token_secret_dealertools`) plus `redshift_user` / `redshift_password`. The script picks the right PAT pair from `CLAUDE_PLUGIN_OPTION_TABLEAU_TOKEN_{NAME,SECRET}_{CARS,DEALERTOOLS}` based on the `--site` passed at invocation.
 - The Python venv is bootstrapped on first use by `${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh` into `${CLAUDE_PLUGIN_DATA}/venv` and persists across plugin updates.
 
 If the user has not yet configured credentials, point them at the plugin README and stop.
@@ -30,7 +30,7 @@ User says things like:
 - "inspect the current SQL on datasource X"
 - "update Initial SQL on datasource X"
 
-Default site is `cars`. Other site in scope: `dealertools`.
+Sites in scope: `cars` and `dealertools`. Always pass `--site` explicitly — ask the user which one if it's not obvious from the request.
 
 For one-shot read-only operations users will more often invoke the slash commands directly:
 - `/tableau-sql-updater:inspect-sql <datasource>` — show current SQL (truncated 500-char preview)
@@ -43,7 +43,7 @@ This skill owns the multi-step *write* workflow.
 
 Follow this sequence for any SQL update:
 
-1. **Confirm target and site.** Ask the user which datasource and which site (`cars` or `dealertools`) if not clear.
+1. **Confirm target and site.** Ask the user which datasource and which site (`cars` or `dealertools`). Site is required on every invocation — there is no default in the skill workflow.
 2. **Save the new SQL to `sql/<TICKET>.sql`** in the user's current working directory (e.g. `sql/EASD-2288.sql`).
 3. **Dry-run** with `--dry-run` to confirm the script found the relations and the new SQL preview looks right.
 4. **Confirm with the user** before publishing.
@@ -126,7 +126,7 @@ Swap `--datasource-name` for `--workbook-name` for workbook targets (same flags 
 
 | Flag | Purpose |
 |------|---------|
-| `--site` | `cars` or `dealertools` (default: `cars`) |
+| `--site` | `cars` or `dealertools` — required; selects which PAT pair to use |
 | `--datasource-name` / `--datasource-id` | Target datasource (name looks up ID) |
 | `--workbook-name` / `--workbook-id` | Target workbook instead of datasource |
 | `--custom-sql-file` | Replace Custom SQL with the contents of this file |

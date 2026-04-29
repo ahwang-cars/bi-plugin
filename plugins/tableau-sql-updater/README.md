@@ -23,14 +23,16 @@ On install, Claude prompts for the `userConfig` values listed below. They're sto
 
 ### userConfig
 
-| Key | Required | Sensitive | Notes |
-|---|---|---|---|
-| `tableau_token_name` | yes | no | Tableau Personal Access Token name |
-| `tableau_token_secret` | yes | yes | Tableau PAT secret |
-| `tableau_server_url` | no | no | Defaults to `https://us-west-2b.online.tableau.com` |
-| `tableau_site_id` | no | no | Defaults to `cars`. Other supported: `dealertools` |
-| `redshift_user` | yes | no | Redshift username embedded into the .tdsx |
-| `redshift_password` | yes | yes | Redshift password embedded into the .tdsx |
+One PAT pair per site (cars and dealertools) — generate each in the corresponding Tableau Online site. The skill asks which site to target on each invocation. Server URL is hardcoded (`https://us-west-2b.online.tableau.com`).
+
+| Key | Sensitive | Notes |
+|---|---|---|
+| `tableau_token_name_cars` | no | PAT name for the cars site |
+| `tableau_token_secret_cars` | yes | PAT secret for the cars site |
+| `tableau_token_name_dealertools` | no | PAT name for the dealertools site |
+| `tableau_token_secret_dealertools` | yes | PAT secret for the dealertools site |
+| `redshift_user` | no | Redshift username embedded into the .tdsx |
+| `redshift_password` | yes | Redshift password embedded into the .tdsx |
 
 ### What you get
 
@@ -60,16 +62,17 @@ Then run with credentials supplied one of two ways:
 
 **Via env vars:**
 ```bash
-export TABLEAU_TOKEN_NAME="<your PAT name>"
-export TABLEAU_TOKEN_SECRET="<your PAT secret>"
+export TABLEAU_TOKEN_NAME="<PAT name for the site you're hitting>"
+export TABLEAU_TOKEN_SECRET="<PAT secret for that site>"
 export REDSHIFT_USER="<your redshift user>"
 export REDSHIFT_PASSWORD="<your redshift password>"
-# optional, if not 'cars' / default server:
+# optional, defaults to 'cars':
 export TABLEAU_SITE_ID="dealertools"
-export TABLEAU_SERVER_URL="https://..."
 
 python scripts/tableau_sql_updater.py --datasource-name "<name>" --inspect-only
 ```
+
+Standalone use carries one PAT pair at a time — re-export when switching sites, or use `--config`.
 
 **Via a config.json:**
 ```bash
