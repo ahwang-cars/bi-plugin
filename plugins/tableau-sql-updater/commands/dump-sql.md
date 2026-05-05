@@ -1,14 +1,14 @@
 ---
 description: Download a Tableau datasource and write its full Initial SQL and Custom SQL to local .sql files. Read-only.
-argument-hint: <datasource-name> [output-dir] [site]
+argument-hint: <datasource-name> [site] [output-dir]
 ---
 
 Pull the live SQL off a Tableau datasource and write it to local `.sql` files. Use this when you want to read or edit the SQL — `inspect-sql` only shows a 500-char preview.
 
 ## Args
 - datasource name (required) — first positional. Quote if it contains spaces.
-- output directory — second positional, default `./sql`. Created if missing. Resolved relative to the user's current working directory.
-- site — third positional, default `cars`. Either `cars` or `dealertools`.
+- site — second positional, default `cars`. Either `cars` or `dealertools`.
+- output directory — third positional, default `./sql`. Created if missing. Resolved relative to the user's current working directory.
 
 If no datasource name is given, ask the user and exit.
 
@@ -38,9 +38,9 @@ eval set -- $ARGS_RAW
 PY=$(${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh)
 "$PY" "${CLAUDE_PLUGIN_ROOT}/scripts/tableau_sql_updater.py" \
   "${CONFIG_FLAG[@]}" \
-  --site "${3:-cars}" \
+  --site "${2:-cars}" \
   --datasource-name "${1:-}" \
-  --dump-sql "${2:-./sql}"
+  --dump-sql "${3:-./sql}"
 ```
 
 ## Output

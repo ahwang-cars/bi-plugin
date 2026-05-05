@@ -36,9 +36,9 @@ User says things like:
 Sites in scope: `cars` and `dealertools`. Always pass `--site` explicitly — ask the user which one if it's not obvious from the request.
 
 For one-shot read-only operations users will more often invoke the slash commands directly:
-- `/tableau-sql-updater:inspect-sql <datasource>` — show current SQL (truncated 500-char preview)
-- `/tableau-sql-updater:dump-sql <datasource> [output-dir]` — write full Initial + Custom SQL to local .sql files
-- `/tableau-sql-updater:validate-sql <ticket-or-file>` — diff against committed file
+- `/tableau-sql-updater:inspect-sql <datasource> [site]` — show current SQL (truncated 500-char preview)
+- `/tableau-sql-updater:dump-sql <datasource> [site] [output-dir]` — write full Initial + Custom SQL to local .sql files
+- `/tableau-sql-updater:validate-sql <datasource> <sql-file> [site]` — diff against committed file
 
 This skill owns the multi-step *write* workflow.
 
