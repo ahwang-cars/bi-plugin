@@ -89,12 +89,46 @@ def parse_tds(zip_path: str, tds_name: str) -> tuple[ET.ElementTree, str]:
     return parse_xml_from_zip(zip_path, tds_name)
 
 
+class AmbiguousRelationError(Exception):
+    """Raised when an op targets Custom SQL but the datasource has >1 distinct
+    relations and no --relation-name was provided."""
+
+    def __init__(self, names: list[str]):
+        self.names = names
+        names_str = ", ".join(f"'{n}'" for n in names)
+        super().__init__(
+            f"Multiple distinct Custom SQL relations found: {names_str}. "
+            f"Pass --relation-name <name> to scope the operation."
+        )
+
+
+def _distinct_custom_sql_names(root: ET.Element) -> list[str]:
+    """Names of distinct Custom SQL relations (deduped by SQL text — the
+    physical+logical layer typically carry duplicates of the same query)."""
+    seen: dict[str, str] = {}
+    for rel in root.iter("relation"):
+        if rel.get("type") != "text":
+            continue
+        sql = (rel.text or "").strip()
+        if not sql or sql in seen:
+            continue
+        seen[sql] = rel.get("name", "(unnamed)")
+    return list(seen.values())
+
+
 def update_custom_sql(root: ET.Element, new_sql: str, relation_name: str | None = None) -> int:
     """
     Replace the text content of <relation type='text'> elements.
     If relation_name is given, only replace matching relation(s).
+    If relation_name is None and the datasource has >1 distinct Custom SQL
+    relations, raises AmbiguousRelationError to prevent clobbering joined
+    datasources with a single SQL file.
     Returns the number of relations updated.
     """
+    if relation_name is None:
+        names = _distinct_custom_sql_names(root)
+        if len(names) > 1:
+            raise AmbiguousRelationError(names)
     count = 0
     for rel in root.iter("relation"):
         if rel.get("type") == "text":
@@ -134,8 +168,15 @@ def switch_to_table(root: ET.Element, table_ref: str, relation_name: str | None 
     Tableau's table attribute format is '[schema].[tablename]'.
 
     If relation_name is given, only convert matching relation(s).
+    If relation_name is None and the datasource has >1 distinct Custom SQL
+    relations, raises AmbiguousRelationError.
     Returns the number of relations converted.
     """
+    if relation_name is None:
+        names = _distinct_custom_sql_names(root)
+        if len(names) > 1:
+            raise AmbiguousRelationError(names)
+
     # Parse schema and table from dot-separated input, strip any existing brackets
     table_ref_clean = table_ref.replace("[", "").replace("]", "")
     parts = table_ref_clean.split(".", 1)
@@ -240,7 +281,15 @@ def validate_custom_sql(root: ET.Element, expected_sql: str,
     Returns (all_match, messages). Messages include per-relation MATCH/MISMATCH lines
     and a unified diff on mismatch. If no Custom SQL relations are found, returns
     (False, [...]) since the datasource isn't using Custom SQL.
+    Raises AmbiguousRelationError when the datasource has >1 distinct Custom SQL
+    relations and no relation_name was provided — validating one file against
+    multiple distinct queries is meaningless.
     """
+    if relation_name is None:
+        names = _distinct_custom_sql_names(root)
+        if len(names) > 1:
+            raise AmbiguousRelationError(names)
+
     messages = []
     found = 0
     mismatches = 0
@@ -287,9 +336,11 @@ def dump_sql_to_dir(root: ET.Element, target_name: str, output_dir: str) -> list
     Write every Initial SQL and Custom SQL relation to .sql files under output_dir.
     Returns the list of file paths written.
 
-    Files: <slug>_initial.sql, <slug>_custom.sql (or <slug>_custom_<n>.sql when
-    multiple distinct Custom SQL relations exist — the duplicates that come from
-    the physical+logical layer are deduped first).
+    Files: <slug>_initial.sql, <slug>_custom.sql (single relation), or
+    <slug>_custom_<relation-slug>.sql (multiple distinct relations — physical+
+    logical duplicates of the same query are deduped first). The relation name
+    in the filename matches what --relation-name expects, so editing the file
+    tells you exactly what to scope the update to.
     """
     os.makedirs(output_dir, exist_ok=True)
     slug = _slugify(target_name)
@@ -320,8 +371,17 @@ def dump_sql_to_dir(root: ET.Element, target_name: str, output_dir: str) -> list
             f.write(sql + "\n")
         written.append(path)
     else:
-        for i, sql in enumerate(seen, 1):
-            path = os.path.join(output_dir, f"{slug}_custom_{i}.sql")
+        used: set[str] = set()
+        for sql, rel_name in seen.items():
+            rel_slug = _slugify(rel_name)
+            base = f"{slug}_custom_{rel_slug}"
+            candidate = base
+            i = 2
+            while candidate in used:
+                candidate = f"{base}_{i}"
+                i += 1
+            used.add(candidate)
+            path = os.path.join(output_dir, f"{candidate}.sql")
             with open(path, "w", encoding="utf-8") as f:
                 f.write(sql + "\n")
             written.append(path)
@@ -787,4 +847,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except AmbiguousRelationError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(2)
