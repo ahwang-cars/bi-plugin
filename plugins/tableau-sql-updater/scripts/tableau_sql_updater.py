@@ -129,12 +129,13 @@ def update_custom_sql(root: ET.Element, new_sql: str, relation_name: str | None 
         names = _distinct_custom_sql_names(root)
         if len(names) > 1:
             raise AmbiguousRelationError(names)
+    encoded_sql = _encode_tableau_sql(new_sql)
     count = 0
     for rel in root.iter("relation"):
         if rel.get("type") == "text":
             if relation_name and rel.get("name") != relation_name:
                 continue
-            rel.text = new_sql
+            rel.text = encoded_sql
             count += 1
     return count
 
@@ -260,7 +261,7 @@ def _print_sql_summary(root: ET.Element):
     for rel in root.iter("relation"):
         if rel.get("type") == "text":
             name = rel.get("name", "(unnamed)")
-            sql = (rel.text or "").strip()
+            sql = _decode_tableau_sql((rel.text or "").strip())
             print(f"\n--- Custom SQL: '{name}' ---")
             print(sql[:500] + ("..." if len(sql) > 500 else ""))
         elif rel.get("type") == "table":
@@ -272,6 +273,25 @@ def _print_sql_summary(root: ET.Element):
 def _normalize_sql(sql: str) -> str:
     """Collapse whitespace for comparison — ignores indentation/line-break differences."""
     return re.sub(r"\s+", " ", sql).strip()
+
+
+def _decode_tableau_sql(sql: str) -> str:
+    """Tableau stores SQL in .tds with `<` doubled to `<<` and `>` doubled to `>>`
+    (so `<>` is stored as `<<>>`, `<=` as `<<=`, `>=` as `>>=`, etc). Tableau
+    Desktop halves them on display. Apply the same halving so dumped/inspected
+    SQL matches what users see in the editor and what would actually run.
+
+    Caveat: Redshift bit-shift `<<` and `>>` round-trip ambiguously — a literal
+    `<<` written by the user is stored as `<<<<` (each `<` doubles), which
+    decodes back to `<<` correctly. But if some non-Tableau process writes `<<`
+    directly into the .tds, this halving would mistakenly read it as `<`."""
+    return sql.replace("<<", "<").replace(">>", ">")
+
+
+def _encode_tableau_sql(sql: str) -> str:
+    """Inverse of `_decode_tableau_sql` — apply before writing SQL back to the
+    .tds so Tableau's storage convention is preserved."""
+    return sql.replace("<", "<<").replace(">", ">>")
 
 
 def validate_custom_sql(root: ET.Element, expected_sql: str,
@@ -302,7 +322,7 @@ def validate_custom_sql(root: ET.Element, expected_sql: str,
             continue
         found += 1
         name = rel.get("name", "(unnamed)")
-        actual = rel.text or ""
+        actual = _decode_tableau_sql(rel.text or "")
         if _normalize_sql(actual) == expected_norm:
             messages.append(f"MATCH: relation '{name}'")
         else:
@@ -368,7 +388,7 @@ def dump_sql_to_dir(root: ET.Element, target_name: str, output_dir: str) -> list
         sql = next(iter(seen))
         path = os.path.join(output_dir, f"{slug}_custom.sql")
         with open(path, "w", encoding="utf-8") as f:
-            f.write(sql + "\n")
+            f.write(_decode_tableau_sql(sql) + "\n")
         written.append(path)
     else:
         used: set[str] = set()
@@ -383,7 +403,7 @@ def dump_sql_to_dir(root: ET.Element, target_name: str, output_dir: str) -> list
             used.add(candidate)
             path = os.path.join(output_dir, f"{candidate}.sql")
             with open(path, "w", encoding="utf-8") as f:
-                f.write(sql + "\n")
+                f.write(_decode_tableau_sql(sql) + "\n")
             written.append(path)
 
     return written
