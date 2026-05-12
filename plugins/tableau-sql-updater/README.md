@@ -50,7 +50,7 @@ The `/plugin` config UI exposes these keys, but the values currently are not rea
 
 | Surface | Type | Purpose |
 |---|---|---|
-| `tableau-sql-updater` | Skill | Multi-step ticket-driven workflow: confirm target → save SQL to `sql/<TICKET>.sql` → dry-run → publish → validate. Triggered by natural-language asks like "update the SQL on datasource X". |
+| `tableau-sql-updater` | Skill | Multi-step ticket-driven workflow: confirm target → save SQL to `sql/<TICKET>.sql` → dry-run (with diff) → publish (auto-validates against the input file). Triggered by natural-language asks like "update the SQL on datasource X". |
 | `/tableau-sql-updater:inspect-sql` | Slash command | One-shot read of current Custom + Initial SQL on a datasource (500-char preview). |
 | `/tableau-sql-updater:dump-sql` | Slash command | Download and write full Initial + Custom SQL to local .sql files for editing or audit. |
 | `/tableau-sql-updater:validate-sql` | Slash command | Diff a local SQL file against the live datasource. Exits 1 on mismatch. |
@@ -139,10 +139,10 @@ What you give up vs. Option A: the auto-invoked workflow (Claude makes decisions
 
 ## Gotchas
 
-- **Post-publish auth error is cosmetic.** The script embeds DB credentials into the `.tdsx` *before* publish, then tries to re-apply them via the REST API after. The post-publish call fails on Bridge-connected datasources with `400033: Authentication update is not allowed`. The publish itself succeeded — ignore the traceback.
+- **Post-publish Bridge auth update is logged, not fatal.** Credentials are embedded into the `.tdsx` pre-publish; the script then tries to re-apply them via the REST API. On Bridge-connected datasources this fails with `400033: Authentication update is not allowed`. The script swallows that error and prints a one-line note to stderr — the publish itself already succeeded.
 - **Two Custom SQL relations are normal.** Most datasources have the same query in two places (physical layer + logical/object-graph layer). Tableau's UI shows it as one. The updater edits both to keep them consistent.
 - **`--switch-to-table` changes the physical layer only.** The logical-table caption (e.g. "Custom SQL Query") persists in the UI even after switching — this is cosmetic. Renaming the caption requires Tableau Desktop.
-- **Always run `--validate-sql` after a publish** when the change is driven by a ticket.
+- **Post-publish validation is automatic.** When you publish with `--custom-sql-file` or `--initial-sql-file`, the script re-downloads the live datasource and diffs it against the input file, exiting non-zero on mismatch. Pass `--no-validate` to skip. `--validate-sql` is still useful for standalone re-checks against a committed ticket file.
 
 ## Troubleshooting
 

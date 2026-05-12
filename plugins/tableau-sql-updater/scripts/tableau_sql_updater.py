@@ -294,6 +294,106 @@ def _encode_tableau_sql(sql: str) -> str:
     return sql.replace("<", "<<").replace(">", ">>")
 
 
+def _capture_sql_state(root: ET.Element) -> dict:
+    """Snapshot Initial SQL and Custom SQL state from an XML root for before/after diffing.
+    Decodes Tableau's `<<`/`>>` doubling on Custom SQL so the diff reads naturally."""
+    initial: list[str] = []
+    custom: dict[str, list[str]] = {}
+    tables: dict[str, list[str]] = {}
+    for conn in root.iter("connection"):
+        s = conn.get("one-time-sql")
+        if s:
+            initial.append(s)
+    for rel in root.iter("relation"):
+        name = rel.get("name", "(unnamed)")
+        if rel.get("type") == "text":
+            custom.setdefault(name, []).append(
+                _decode_tableau_sql((rel.text or "").strip())
+            )
+        elif rel.get("type") == "table":
+            tables.setdefault(name, []).append(rel.get("table", "?"))
+    return {"initial": initial, "custom": custom, "tables": tables}
+
+
+def _print_state_diff(before: dict, after: dict) -> None:
+    """Print a unified diff between two `_capture_sql_state` snapshots.
+    Collapses physical+logical duplicates of the same SQL into a single diff."""
+    any_changes = False
+
+    b_init = list(dict.fromkeys(before["initial"]))
+    a_init = list(dict.fromkeys(after["initial"]))
+    if b_init != a_init:
+        any_changes = True
+        if not a_init:
+            print("\n--- Initial SQL: removed ---")
+        elif not b_init:
+            print("\n--- Initial SQL: added ---")
+            print(a_init[0])
+        else:
+            print("\n--- Diff: Initial SQL ---")
+            for line in difflib.unified_diff(
+                b_init[0].splitlines(), a_init[0].splitlines(),
+                fromfile="before", tofile="after", lineterm="",
+            ):
+                print(line)
+
+    all_names = sorted(set(before["custom"]) | set(after["custom"]))
+    for name in all_names:
+        b_set = list(dict.fromkeys(before["custom"].get(name, [])))
+        a_set = list(dict.fromkeys(after["custom"].get(name, [])))
+        if b_set == a_set:
+            continue
+        any_changes = True
+        if not a_set:
+            tgt = after["tables"].get(name)
+            if tgt:
+                print(f"\n--- Custom SQL '{name}' converted to table: {tgt[0]} ---")
+            else:
+                print(f"\n--- Custom SQL '{name}': removed ---")
+            continue
+        if not b_set:
+            print(f"\n--- Custom SQL '{name}': added ---")
+            print(a_set[0])
+            continue
+        print(f"\n--- Diff: Custom SQL '{name}' ---")
+        for line in difflib.unified_diff(
+            b_set[0].splitlines(), a_set[0].splitlines(),
+            fromfile="before", tofile="after", lineterm="",
+        ):
+            print(line)
+
+    if not any_changes:
+        print("\n--- No SQL changes detected. ---")
+
+
+def validate_initial_sql(root: ET.Element, expected_sql: str) -> tuple[bool, list[str]]:
+    """Compare each connection's `one-time-sql` against expected_sql (whitespace-normalized).
+    Returns (all_match, messages). Returns (False, ...) if no Initial SQL is present."""
+    messages: list[str] = []
+    found = 0
+    mismatches = 0
+    expected_norm = _normalize_sql(expected_sql)
+    for conn in root.iter("connection"):
+        actual = conn.get("one-time-sql")
+        if not actual:
+            continue
+        found += 1
+        cls = conn.get("class", "?")
+        if _normalize_sql(actual) == expected_norm:
+            messages.append(f"MATCH: Initial SQL on connection (class={cls})")
+        else:
+            mismatches += 1
+            messages.append(f"MISMATCH: Initial SQL on connection (class={cls})")
+            messages.extend(difflib.unified_diff(
+                expected_sql.splitlines(), actual.splitlines(),
+                fromfile="expected", tofile="actual", lineterm="",
+            ))
+    if found == 0:
+        messages.append("No Initial SQL found on datasource.")
+        return False, messages
+    return mismatches == 0, messages
+
+
 def validate_custom_sql(root: ET.Element, expected_sql: str,
                         relation_name: str | None = None) -> tuple[bool, list[str]]:
     """
@@ -525,13 +625,26 @@ def publish_workbook(
     if db_username and db_password:
         server.workbooks.populate_connections(result)
         updated = 0
+        skipped = 0
         for conn in result.connections:
             conn.username = db_username
             conn.password = db_password
             conn.embed_password = True
-            server.workbooks.update_connection(result, conn)
-            updated += 1
-        print(f"Re-applied database credentials to {updated} connection(s)")
+            try:
+                server.workbooks.update_connection(result, conn)
+                updated += 1
+            except Exception as e:
+                # Bridge-connected sources reject post-publish auth updates with
+                # 400033 "Authentication update is not allowed". Credentials were
+                # already embedded in the file pre-publish, so the publish itself
+                # is fine — log to stderr and keep going.
+                skipped += 1
+                print(f"  Note: post-publish update_connection skipped ({type(e).__name__}: {e})",
+                      file=sys.stderr)
+        if updated:
+            print(f"Re-applied database credentials to {updated} connection(s)")
+        if skipped:
+            print(f"Skipped post-publish auth update on {skipped} connection(s) (already embedded pre-publish)")
 
     return result
 
@@ -569,13 +682,26 @@ def publish_datasource(
     if db_username and db_password:
         server.datasources.populate_connections(result)
         updated = 0
+        skipped = 0
         for conn in result.connections:
             conn.username = db_username
             conn.password = db_password
             conn.embed_password = True
-            server.datasources.update_connection(result, conn)
-            updated += 1
-        print(f"Re-applied database credentials to {updated} connection(s)")
+            try:
+                server.datasources.update_connection(result, conn)
+                updated += 1
+            except Exception as e:
+                # Bridge-connected sources reject post-publish auth updates with
+                # 400033 "Authentication update is not allowed". Credentials were
+                # already embedded in the file pre-publish, so the publish itself
+                # is fine — log to stderr and keep going.
+                skipped += 1
+                print(f"  Note: post-publish update_connection skipped ({type(e).__name__}: {e})",
+                      file=sys.stderr)
+        if updated:
+            print(f"Re-applied database credentials to {updated} connection(s)")
+        if skipped:
+            print(f"Skipped post-publish auth update on {skipped} connection(s) (already embedded pre-publish)")
 
     return result
 
@@ -633,7 +759,13 @@ def main():
                              "Custom SQL into as .sql files. Read-only. Filenames are "
                              "<slug>_initial.sql and <slug>_custom.sql.")
     parser.add_argument("--dry-run", action="store_true",
-                        help="Modify locally but do NOT publish back")
+                        help="Modify locally but do NOT publish back. Prints a unified diff "
+                             "of the before/after SQL so you can review the change.")
+    parser.add_argument("--no-validate", action="store_true",
+                        help="Skip the automatic post-publish validation. By default, after "
+                             "a successful publish the script re-downloads the datasource and "
+                             "verifies that --custom-sql-file / --initial-sql-file match the "
+                             "live state, exiting non-zero on mismatch.")
     parser.add_argument("--output-dir", help="Save modified file to this directory")
     parser.add_argument("--local-tdsx", help="Use a local .tdsx file instead of downloading")
     parser.add_argument("--local-twbx", help="Use a local .twbx file instead of downloading")
@@ -799,6 +931,7 @@ def main():
     tree, _ = parse_xml_from_zip(zip_path, xml_name)
     root = tree.getroot()
 
+    before_state = _capture_sql_state(root)
     changes_made = False
 
     if db_username and db_password:
@@ -838,14 +971,17 @@ def main():
     repackage_zip(zip_path, xml_name, tree, modified_path)
     print(f"Modified file saved to: {modified_path}")
 
-    if workbook_mode:
-        inspect_workbook(modified_path)
-    else:
-        inspect_datasource(modified_path)
+    after_state = _capture_sql_state(root)
+
+    print(f"\n{'='*70}")
+    print(f"  Change preview (before -> after)")
+    print(f"{'='*70}")
+    _print_state_diff(before_state, after_state)
+    print(f"\n{'='*70}\n")
 
     # --- Step 5: Publish (unless dry-run) ---
     if args.dry_run:
-        print("DRY RUN: Skipping publish. Review the modified file above.")
+        print("DRY RUN: Skipping publish. Review the diff above.")
         return
 
     if workbook_mode:
@@ -857,11 +993,67 @@ def main():
             server = connect(server_url, site_id, token_name, token_value)
         publish_datasource(server, target_id, modified_path, db_username, db_password)
 
+    # --- Step 6: Auto-validate post-publish (unless --no-validate) ---
+    # Only meaningful when we wrote SQL from a file — there's an expected value to check against.
+    validate_targets = []
+    if args.custom_sql_file:
+        validate_targets.append(("custom", args.custom_sql_file))
+    if args.initial_sql_file:
+        validate_targets.append(("initial", args.initial_sql_file))
+
+    validation_failed = False
+    if validate_targets and not args.no_validate:
+        validate_dir = tempfile.mkdtemp(prefix="tableau_sql_validate_")
+        try:
+            if workbook_mode:
+                live_zip = download_workbook(server, target_id, validate_dir)
+                live_xml_name = find_twb_in_zip(live_zip)
+            else:
+                live_zip = download_datasource(server, target_id, validate_dir)
+                live_xml_name = find_tds_in_zip(live_zip)
+            live_tree, _ = parse_xml_from_zip(live_zip, live_xml_name)
+            live_root = live_tree.getroot()
+
+            print(f"\n{'='*70}")
+            print(f"  Auto-validating live datasource against input file(s)")
+            print(f"  (skip with --no-validate)")
+            print(f"{'='*70}")
+
+            for kind, path in validate_targets:
+                expected = Path(path).read_text(encoding="utf-8").strip()
+                if kind == "custom":
+                    try:
+                        ok, msgs = validate_custom_sql(live_root, expected, args.relation_name)
+                    except AmbiguousRelationError as e:
+                        print(f"\n  Custom SQL ({path}): ERROR — {e}")
+                        validation_failed = True
+                        continue
+                else:
+                    ok, msgs = validate_initial_sql(live_root, expected)
+                label = "Custom SQL" if kind == "custom" else "Initial SQL"
+                print(f"\n  {label} ({path}):")
+                for line in msgs:
+                    print(f"    {line}")
+                if not ok:
+                    validation_failed = True
+
+            print(f"\n{'='*70}")
+            if validation_failed:
+                print("RESULT: post-publish validation FAILED — live state does not match input file(s).")
+            else:
+                print("RESULT: live datasource matches input file(s).")
+            print(f"{'='*70}\n")
+        finally:
+            shutil.rmtree(validate_dir, ignore_errors=True)
+
     if not args.output_dir:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
     if server:
         server.auth.sign_out()
+
+    if validation_failed:
+        sys.exit(1)
 
     print("Done!")
 

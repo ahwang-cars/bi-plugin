@@ -48,10 +48,9 @@ Follow this sequence for any SQL update:
 
 1. **Confirm target and site.** Ask the user which datasource and which site (`cars` or `dealertools`). Site is required on every invocation — there is no default in the skill workflow.
 2. **Save the new SQL to `sql/<TICKET>.sql`** in the user's current working directory (e.g. `sql/EASD-2288.sql`).
-3. **Dry-run** with `--dry-run` to confirm the script found the relations and the new SQL preview looks right.
+3. **Dry-run** with `--dry-run` — prints a unified diff of the before/after SQL so the user can review the exact change.
 4. **Confirm with the user** before publishing.
-5. **Publish** (drop `--dry-run`).
-6. **Validate** after publish with `--validate-sql` to prove the live datasource now matches the file.
+5. **Publish** (drop `--dry-run`). The script auto-validates after publish — it re-downloads and verifies the live state matches `--custom-sql-file` / `--initial-sql-file` and exits non-zero on mismatch. Pass `--no-validate` to skip.
 
 ## Invocation pattern
 
@@ -148,7 +147,8 @@ Swap `--datasource-name` for `--workbook-name` for workbook targets (same flags 
 | `--validate-sql` | Download and diff Custom SQL against a file (exit 1 on mismatch) |
 | `--dump-sql` | Download and write full Initial + Custom SQL to .sql files in this directory |
 | `--inspect-only` | Print current SQL; no changes |
-| `--dry-run` | Modify locally but do NOT publish |
+| `--dry-run` | Modify locally but do NOT publish; prints a unified diff of the change |
+| `--no-validate` | Skip the automatic post-publish validation against `--custom-sql-file` / `--initial-sql-file` |
 | `--output-dir` | Save the modified `.tdsx` locally |
 | `--local-tdsx` / `--local-twbx` | Use a local file instead of downloading |
 | `--config` | Path to config.json with PAT pairs and DB creds (auto-detected by the bootstrap preamble) |
@@ -163,12 +163,12 @@ Marker between sections must be `-- CUSTOM SQL BELOW --`. Output: `initial_sql.s
 
 ## Gotchas
 
-- **Post-publish auth error is cosmetic.** The script embeds DB credentials into the `.tdsx` XML *before* publish, then tries to re-apply them via the REST API after publish. The API call fails on Bridge-connected datasources with `400033: Authentication update is not allowed`. The publish itself succeeded — ignore the traceback.
+- **Post-publish Bridge auth update is logged but not fatal.** The script embeds DB credentials into the `.tdsx` XML *before* publish, then tries to re-apply them via the REST API after publish. The API call fails on Bridge-connected datasources with `400033: Authentication update is not allowed`. The script now swallows that exception and prints a one-line note to stderr, since the publish itself already succeeded.
 - **Two Custom SQL relations are normal.** Most datasources have the same query in two places (physical layer + logical/object-graph layer). Tableau's UI shows it as one. The updater edits both to keep them consistent.
 - **Joined datasources have *distinct* Custom SQL relations** (one per logical table in the join). The script auto-detects this and refuses ambiguous updates: `update`, `validate`, and `switch-to-table` will exit with `Multiple distinct Custom SQL relations found: '<name1>', '<name2>'. Pass --relation-name <name>`. Pick the relation you want, pass it via `--relation-name`, and re-run. `dump-sql` embeds the relation name in the filename (`<slug>_custom_<relation-slug>.sql`) so you can match file → relation without inspecting first.
 - **Tableau doubles `<` and `>` in stored SQL.** The `.tds` XML inside a `.tdsx` stores `<>` as `<<>>`, `<=` as `<<=`, `>=` as `>>=`, etc. Tableau Desktop halves them on display. The script handles this transparently — `dump-sql`/`inspect-sql` halve before showing, `--custom-sql-file`/`validate-sql` double before writing/comparing. Edge case: Redshift bit-shift operators `<<`/`>>` round-trip ambiguously through this encoding (rare in BI queries; flag if you hit it).
 - **`--switch-to-table` changes the physical layer only.** The logical-table caption (e.g. "Custom SQL Query") persists in the UI even after switching — this is cosmetic. Renaming the caption requires Tableau Desktop (it rewrites column bindings safely).
-- **Always run `--validate-sql` after publish** when the change is driven by a ticket. It proves the deployed state matches the file you intended to ship.
+- **Post-publish validation is automatic** when `--custom-sql-file` / `--initial-sql-file` is provided. The script re-downloads the live datasource and diffs it against the input file, exiting non-zero on mismatch. `--no-validate` skips it. `--validate-sql` still exists for standalone re-checks against a committed ticket file.
 - **Credentials live in `~/.tableau-config.json`** (or `$TABLEAU_CONFIG` / `~/sql-updater/config.json`). `chmod 600`, never commit, never paste into shell history.
 
 ## Troubleshooting
