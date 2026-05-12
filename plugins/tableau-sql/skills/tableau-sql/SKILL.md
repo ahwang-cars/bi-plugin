@@ -46,7 +46,7 @@ This skill owns the multi-step *write* workflow.
 
 Follow this sequence for any SQL update:
 
-1. **Confirm target and site.** Ask the user which datasource and which site (`cars` or `dealertools`). Site is required on every invocation — there is no default in the skill workflow.
+1. **Confirm target and site.** Ask the user which datasource and which site (`cars` or `dealertools`). Site is required on every invocation — there is no default in the skill workflow. If the user provides a datasource LUID (UUID shape `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`), pass it as `--datasource-id` instead of `--datasource-name` — it skips the name-lookup pager. The numeric ID in a Tableau web URL (e.g. `/datasources/106191281`) is **not** the LUID; treat that as a name lookup hint, not an ID.
 2. **Save the new SQL to `sql/<TICKET>.sql`** in the user's current working directory (e.g. `sql/EASD-2288.sql`).
 3. **Dry-run** with `--dry-run` — prints a unified diff of the before/after SQL so the user can review the exact change.
 4. **Confirm with the user** before publishing.

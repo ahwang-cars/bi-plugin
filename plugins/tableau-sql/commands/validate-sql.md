@@ -1,12 +1,12 @@
 ---
 description: Diff a local SQL file against the live Custom SQL on a Tableau datasource. Exits 1 on mismatch with a unified diff.
-argument-hint: <datasource-name> <sql-file> [site]
+argument-hint: <datasource-name-or-luid> <sql-file> [site]
 ---
 
 Validate that the live Custom SQL on a Tableau datasource matches a local file. Use this after a publish (to confirm deploy) or any time someone wants to re-verify prod against the committed ticket SQL.
 
 ## Args
-- datasource name (required) — first positional. Quote if it contains spaces.
+- datasource (required) — first positional. Either the human-readable name (quote if it contains spaces) or the datasource LUID (`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`). LUID skips the name-lookup pager and is faster. Note: the numeric ID in a Tableau web URL (e.g. `/datasources/106191281`) is **not** the LUID.
 - sql file path (required) — second positional, e.g. `sql/EASD-2288.sql`. Resolved relative to the user's current working directory.
 - site — third positional, default `cars`. Either `cars` or `dealertools`.
 
@@ -35,11 +35,19 @@ CONFIG_FLAG=()
 ARGS_RAW='$ARGUMENTS'
 eval set -- $ARGS_RAW
 
+# Route by LUID shape: UUIDs go to --datasource-id (skips the name-lookup pager).
+ARG1="${1:-}"
+if [[ "$ARG1" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+  TARGET_FLAG=(--datasource-id "$ARG1")
+else
+  TARGET_FLAG=(--datasource-name "$ARG1")
+fi
+
 PY=$(${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh)
 "$PY" "${CLAUDE_PLUGIN_ROOT}/scripts/tableau_sql.py" \
   "${CONFIG_FLAG[@]}" \
   --site "${3:-cars}" \
-  --datasource-name "${1:-}" \
+  "${TARGET_FLAG[@]}" \
   --validate-sql "${2:-}"
 ```
 

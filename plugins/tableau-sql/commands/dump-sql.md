@@ -1,16 +1,16 @@
 ---
 description: Download a Tableau datasource and write its full Initial SQL and Custom SQL to local .sql files. Read-only.
-argument-hint: <datasource-name> [site] [output-dir]
+argument-hint: <datasource-name-or-luid> [site] [output-dir]
 ---
 
 Pull the live SQL off a Tableau datasource and write it to local `.sql` files. Use this when you want to read or edit the SQL — `inspect-sql` only shows a 500-char preview.
 
 ## Args
-- datasource name (required) — first positional. Quote if it contains spaces.
+- datasource (required) — first positional. Either the human-readable name (quote if it contains spaces) or the datasource LUID (`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`). LUID skips the name-lookup pager and is faster. Note: the numeric ID in a Tableau web URL (e.g. `/datasources/106191281`) is **not** the LUID.
 - site — second positional, default `cars`. Either `cars` or `dealertools`.
 - output directory — third positional, default `./sql`. Created if missing. Resolved relative to the user's current working directory.
 
-If no datasource name is given, ask the user and exit.
+If no datasource is given, ask the user and exit.
 
 ## Run
 
@@ -35,11 +35,19 @@ CONFIG_FLAG=()
 ARGS_RAW='$ARGUMENTS'
 eval set -- $ARGS_RAW
 
+# Route by LUID shape: UUIDs go to --datasource-id (skips the name-lookup pager).
+ARG1="${1:-}"
+if [[ "$ARG1" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+  TARGET_FLAG=(--datasource-id "$ARG1")
+else
+  TARGET_FLAG=(--datasource-name "$ARG1")
+fi
+
 PY=$(${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh)
 "$PY" "${CLAUDE_PLUGIN_ROOT}/scripts/tableau_sql.py" \
   "${CONFIG_FLAG[@]}" \
   --site "${2:-cars}" \
-  --datasource-name "${1:-}" \
+  "${TARGET_FLAG[@]}" \
   --dump-sql "${3:-./sql}"
 ```
 
