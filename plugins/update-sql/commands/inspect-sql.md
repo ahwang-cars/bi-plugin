@@ -17,7 +17,7 @@ If no datasource name is given, ask the user and exit.
 # Self-bootstrap plugin paths + locate a config.json. The harness does not propagate
 # userConfig env vars to Bash-tool execution (see plugin README).
 export CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT}"
-export CLAUDE_PLUGIN_DATA="${HOME}/.claude/plugins/data/bi-plugin/tableau-sql-updater"
+export CLAUDE_PLUGIN_DATA="${HOME}/.claude/plugins/data/bi-plugin/update-sql"
 
 CONFIG="${TABLEAU_CONFIG:-}"
 if [ -z "$CONFIG" ]; then
@@ -35,7 +35,7 @@ ARGS_RAW='$ARGUMENTS'
 eval set -- $ARGS_RAW
 
 PY=$(${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh)
-"$PY" "${CLAUDE_PLUGIN_ROOT}/scripts/tableau_sql_updater.py" \
+"$PY" "${CLAUDE_PLUGIN_ROOT}/scripts/update_sql.py" \
   "${CONFIG_FLAG[@]}" \
   --site "${2:-cars}" \
   --datasource-name "${1:-}" \

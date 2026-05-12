@@ -7,7 +7,7 @@ Many Tableau data sources use a pattern where:
   - Custom SQL references those temp tables
 
 If your .sql file contains both, this script splits them based on markers
-or heuristics so they can be fed independently to tableau_sql_updater.py.
+or heuristics so they can be fed independently to update_sql.py.
 
 Usage:
   python split_sql.py input.sql --output-dir ./split_output
