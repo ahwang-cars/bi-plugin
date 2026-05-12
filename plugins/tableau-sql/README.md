@@ -50,7 +50,7 @@ The `/plugin` config UI exposes these keys, but the values currently are not rea
 
 | Surface | Type | Purpose |
 |---|---|---|
-| `tableau-sql` | Skill | Multi-step ticket-driven workflow: confirm target → save SQL to `sql/<TICKET>.sql` → dry-run (with diff) → publish (auto-validates against the input file). Triggered by natural-language asks like "update the SQL on datasource X". |
+| `update-sql` | Skill | Multi-step ticket-driven workflow: confirm target → save SQL to `sql/<TICKET>.sql` → dry-run (with diff) → publish (auto-validates against the input file). Triggered by natural-language asks like "update the SQL on datasource X". Invoked as `/tableau-sql:update-sql` if you want to trigger it explicitly. |
 | `/tableau-sql:inspect-sql` | Slash command | One-shot read of current Custom + Initial SQL on a datasource (500-char preview). |
 | `/tableau-sql:dump-sql` | Slash command | Download and write full Initial + Custom SQL to local .sql files for editing or audit. |
 | `/tableau-sql:validate-sql` | Slash command | Diff a local SQL file against the live datasource. Exits 1 on mismatch. |

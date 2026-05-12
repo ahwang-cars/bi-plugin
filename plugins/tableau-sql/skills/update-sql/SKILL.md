@@ -1,5 +1,5 @@
 ---
-name: tableau-sql
+name: update-sql
 description: Update or validate the Custom SQL / Initial SQL of a Tableau Online data source (or workbook) without opening Tableau Desktop. Trigger when the user asks to update, replace, inspect, validate, or switch-to-table the SQL of a Tableau datasource or workbook.
 ---
 
