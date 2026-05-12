@@ -6,8 +6,8 @@
   },
   "plugins": [
     {
-      "name": "update-sql",
-      "source": "./plugins/update-sql",
+      "name": "tableau-sql",
+      "source": "./plugins/tableau-sql",
       "description": "Update and validate Tableau Online Custom SQL and Initial SQL via REST API, no Tableau Desktop round-trip.",
       "category": "data-tools",
       "keywords": ["tableau", "sql", "datasource", "redshift"]

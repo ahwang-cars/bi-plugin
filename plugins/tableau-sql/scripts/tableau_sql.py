@@ -16,14 +16,14 @@ Requirements:
   pip install tableauserverclient
 
 Usage (with config file):
-  python update_sql.py \
+  python tableau_sql.py \
     --config config.json \
     --datasource-name "DI 13mo Daily DigAd Summary Dealer Performance" \
     --custom-sql-file updated_query.sql \
     --dry-run
 
 Usage (with explicit credentials):
-  python update_sql.py \
+  python tableau_sql.py \
     --token-name "MY_PAT_NAME" \
     --token-value "MY_PAT_VALUE" \
     --datasource-id "76595187-2cbc-4f88-ba72-ba162f734bf5" \

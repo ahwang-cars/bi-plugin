@@ -22,7 +22,7 @@ Typical patterns:
 
 Credentials are auto-discovered from (in order):
     1. --config <path>, if given
-    2. ~/.tableau-config.json   (shared with update-sql)
+    2. ~/.tableau-config.json   (shared with tableau-sql)
     3. ~/sql-updater/config.json
     4. ~/.diff-sqls-config.json
 Env vars (REDSHIFT_HOST/PORT/DATABASE/USER/PASSWORD) fill any gaps.
@@ -32,7 +32,7 @@ Schema in the config file:
       "connection_credentials": {"username": "...", "password": "..."},
       "redshift": {"host": "...", "port": 5439, "database": "dw"}
     }
-The `connection_credentials` block is the same one update-sql reads;
+The `connection_credentials` block is the same one tableau-sql reads;
 `redshift` is a new top-level block it ignores. user/password may also live
 under "redshift" if you'd rather keep diff-sqls self-contained.
 
@@ -80,10 +80,10 @@ def _default_output_path(label_a, label_b):
     return f"diff-{_slug(label_a)}-vs-{_slug(label_b)}-{ts}.md"
 
 
-# Auto-discovery order. Shared with update-sql so users only maintain
+# Auto-discovery order. Shared with tableau-sql so users only maintain
 # one creds file. The user/password are pulled from `connection_credentials`
-# (update-sql's existing schema); host/port/database come from a new
-# top-level `redshift` block that update-sql ignores.
+# (tableau-sql's existing schema); host/port/database come from a new
+# top-level `redshift` block that tableau-sql ignores.
 DEFAULT_CONFIG_PATHS = [
     os.path.expanduser("~/.tableau-config.json"),
     os.path.expanduser("~/sql-updater/config.json"),

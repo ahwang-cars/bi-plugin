@@ -15,7 +15,7 @@ When you (a maintainer) ask me to do work in this repo, I should default to thes
 
 - Skill (`skills/<name>/SKILL.md`): multi-step workflows where Claude makes decisions or pauses for confirmation. Triggered by natural language.
 - Slash command (`commands/<name>.md`): atomic, deterministic ops. Triggered by typing `/<plugin>:<command>`.
-- Same script can power both. See `update-sql` for the pattern.
+- Same script can power both. See `tableau-sql` for the pattern.
 
 ## Path / runtime conventions
 

@@ -8,7 +8,7 @@ This repo is a Claude Code plugin marketplace. Each top-level entry under `plugi
 |---|---|
 | **Skill** (`skills/<name>/SKILL.md`) | Multi-step workflows where Claude needs to make decisions or pause for user confirmation between steps. Triggered by natural-language intent. |
 | **Slash command** (`commands/<name>.md`) | Atomic, deterministic operations the user already knows they want. Triggered by typing `/<plugin>:<command>`. |
-| **Both** | When the same underlying script powers a workflow *and* a few sharp one-shot ops. The skill orchestrates; the slash commands are direct entry points. (See `update-sql` for an example.) |
+| **Both** | When the same underlying script powers a workflow *and* a few sharp one-shot ops. The skill orchestrates; the slash commands are direct entry points. (See `tableau-sql` for an example.) |
 
 If you find yourself writing more than ~5 distinct operations under one plugin, that's a sign to split into multiple plugins, not one mega-skill.
 

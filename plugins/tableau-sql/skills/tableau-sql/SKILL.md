@@ -1,9 +1,9 @@
 ---
-name: update-sql
+name: tableau-sql
 description: Update or validate the Custom SQL / Initial SQL of a Tableau Online data source (or workbook) without opening Tableau Desktop. Trigger when the user asks to update, replace, inspect, validate, or switch-to-table the SQL of a Tableau datasource or workbook.
 ---
 
-# Update SQL
+# Tableau SQL
 
 Programmatically edit a Tableau Online data source's Custom SQL or Initial SQL via the REST API — no Tableau Desktop round-trip.
 
@@ -36,9 +36,9 @@ User says things like:
 Sites in scope: `cars` and `dealertools`. Always pass `--site` explicitly — ask the user which one if it's not obvious from the request.
 
 For one-shot read-only operations users will more often invoke the slash commands directly:
-- `/update-sql:inspect-sql <datasource> [site]` — show current SQL (truncated 500-char preview)
-- `/update-sql:dump-sql <datasource> [site] [output-dir]` — write full Initial + Custom SQL to local .sql files
-- `/update-sql:validate-sql <datasource> <sql-file> [site]` — diff against committed file
+- `/tableau-sql:inspect-sql <datasource> [site]` — show current SQL (truncated 500-char preview)
+- `/tableau-sql:dump-sql <datasource> [site] [output-dir]` — write full Initial + Custom SQL to local .sql files
+- `/tableau-sql:validate-sql <datasource> <sql-file> [site]` — diff against committed file
 
 This skill owns the multi-step *write* workflow.
 
@@ -59,7 +59,7 @@ Each Bash tool call is a fresh subshell, so every invocation must include the fu
 ```bash
 # --- bootstrap preamble (prepend to every invocation) ---
 export CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT}"
-export CLAUDE_PLUGIN_DATA="${HOME}/.claude/plugins/data/bi-plugin/update-sql"
+export CLAUDE_PLUGIN_DATA="${HOME}/.claude/plugins/data/bi-plugin/tableau-sql"
 CONFIG="${TABLEAU_CONFIG:-}"
 if [ -z "$CONFIG" ]; then
   for c in "$HOME/.tableau-config.json" "$HOME/sql-updater/config.json"; do
@@ -69,7 +69,7 @@ fi
 CONFIG_FLAG=()
 [ -n "$CONFIG" ] && CONFIG_FLAG=(--config "$CONFIG")
 PY=$("$CLAUDE_PLUGIN_ROOT/scripts/bootstrap.sh")
-SCRIPT="$CLAUDE_PLUGIN_ROOT/scripts/update_sql.py"
+SCRIPT="$CLAUDE_PLUGIN_ROOT/scripts/tableau_sql.py"
 # --- end preamble ---
 
 "$PY" "$SCRIPT" "${CONFIG_FLAG[@]}" <flags…>

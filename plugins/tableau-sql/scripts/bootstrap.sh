@@ -35,7 +35,7 @@ mkdir -p "$CLAUDE_PLUGIN_DATA"
 
 if [[ ! -x "$VENV/bin/python" ]]; then
   PY_BIN=$(find_python) || {
-    echo "ERROR: update-sql requires Python 3.10 or later, but none was found on PATH." >&2
+    echo "ERROR: tableau-sql requires Python 3.10 or later, but none was found on PATH." >&2
     echo "       Install via Homebrew (\`brew install python@3.12\`) or python.org and re-run." >&2
     exit 1
   }

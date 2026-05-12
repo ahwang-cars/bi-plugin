@@ -1,4 +1,4 @@
-# update-sql
+# tableau-sql
 
 Update and validate the Custom SQL or Initial SQL of a Tableau Online datasource (or workbook) via the REST API. No Tableau Desktop round-trip.
 
@@ -16,7 +16,7 @@ Two ways to use it: as a Claude Code plugin (smooth UX) or as a standalone Pytho
 
 ```
 /plugin marketplace add ahwang-cars/bi-plugin
-/plugin install update-sql@bi-plugin
+/plugin install tableau-sql@bi-plugin
 ```
 
 On install, Claude prompts for the `userConfig` values listed below. The Python venv is auto-bootstrapped on first use.
@@ -50,10 +50,10 @@ The `/plugin` config UI exposes these keys, but the values currently are not rea
 
 | Surface | Type | Purpose |
 |---|---|---|
-| `update-sql` | Skill | Multi-step ticket-driven workflow: confirm target → save SQL to `sql/<TICKET>.sql` → dry-run (with diff) → publish (auto-validates against the input file). Triggered by natural-language asks like "update the SQL on datasource X". |
-| `/update-sql:inspect-sql` | Slash command | One-shot read of current Custom + Initial SQL on a datasource (500-char preview). |
-| `/update-sql:dump-sql` | Slash command | Download and write full Initial + Custom SQL to local .sql files for editing or audit. |
-| `/update-sql:validate-sql` | Slash command | Diff a local SQL file against the live datasource. Exits 1 on mismatch. |
+| `tableau-sql` | Skill | Multi-step ticket-driven workflow: confirm target → save SQL to `sql/<TICKET>.sql` → dry-run (with diff) → publish (auto-validates against the input file). Triggered by natural-language asks like "update the SQL on datasource X". |
+| `/tableau-sql:inspect-sql` | Slash command | One-shot read of current Custom + Initial SQL on a datasource (500-char preview). |
+| `/tableau-sql:dump-sql` | Slash command | Download and write full Initial + Custom SQL to local .sql files for editing or audit. |
+| `/tableau-sql:validate-sql` | Slash command | Diff a local SQL file against the live datasource. Exits 1 on mismatch. |
 
 The skill writes ticket-scoped SQL to `sql/<TICKET>.sql` in your **current working directory**, never into the plugin install. Commit those files to whatever repo you use for SQL audit trail.
 
@@ -63,7 +63,7 @@ The skill writes ticket-scoped SQL to `sql/<TICKET>.sql` in your **current worki
 
 ```bash
 git clone https://github.com/ahwang-cars/bi-plugin.git
-cd bi-plugin/plugins/update-sql
+cd bi-plugin/plugins/tableau-sql
 
 python3.12 -m venv venv
 source venv/bin/activate
@@ -81,7 +81,7 @@ export REDSHIFT_PASSWORD="<your redshift password>"
 # optional, defaults to 'cars':
 export TABLEAU_SITE_ID="dealertools"
 
-python scripts/update_sql.py --datasource-name "<name>" --inspect-only
+python scripts/tableau_sql.py --datasource-name "<name>" --inspect-only
 ```
 
 Standalone use carries one PAT pair at a time — re-export when switching sites, or use `--config`.
@@ -108,27 +108,27 @@ cat > my-config.json <<'EOF'
 }
 EOF
 chmod 600 my-config.json   # don't commit this
-python scripts/update_sql.py --config my-config.json \
+python scripts/tableau_sql.py --config my-config.json \
   --datasource-name "<name>" --inspect-only
 ```
 
 Common operations:
 ```bash
 # Inspect (500-char preview)
-python scripts/update_sql.py --datasource-name "X" --inspect-only
+python scripts/tableau_sql.py --datasource-name "X" --inspect-only
 
 # Dump full Initial + Custom SQL to ./sql/
-python scripts/update_sql.py --datasource-name "X" --dump-sql ./sql
+python scripts/tableau_sql.py --datasource-name "X" --dump-sql ./sql
 
 # Update Custom SQL (dry-run, then publish)
-python scripts/update_sql.py --datasource-name "X" --custom-sql-file sql/TICKET.sql --dry-run
-python scripts/update_sql.py --datasource-name "X" --custom-sql-file sql/TICKET.sql
+python scripts/tableau_sql.py --datasource-name "X" --custom-sql-file sql/TICKET.sql --dry-run
+python scripts/tableau_sql.py --datasource-name "X" --custom-sql-file sql/TICKET.sql
 
 # Validate live state matches a file
-python scripts/update_sql.py --datasource-name "X" --validate-sql sql/TICKET.sql
+python scripts/tableau_sql.py --datasource-name "X" --validate-sql sql/TICKET.sql
 
 # Switch Custom SQL to a direct table
-python scripts/update_sql.py --datasource-name "X" --switch-to-table "schema.tablename" --dry-run
+python scripts/tableau_sql.py --datasource-name "X" --switch-to-table "schema.tablename" --dry-run
 ```
 
 `--site dealertools` to target the dealertools site. `--workbook-name` instead of `--datasource-name` for workbook targets. `--help` for the full flag list.

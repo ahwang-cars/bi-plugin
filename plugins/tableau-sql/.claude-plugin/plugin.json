@@ -1,5 +1,5 @@
 {
-  "name": "update-sql",
+  "name": "tableau-sql",
   "description": "Edit and validate Tableau datasource Custom SQL / Initial SQL without Tableau Desktop.",
   "author": {
     "name": "Cars BI"

@@ -29,11 +29,11 @@ The Claude Code harness does not currently propagate plugin `userConfig` env var
 Auto-discovery order:
 
 1. `$DIFF_SQLS_CONFIG` env var, if set
-2. `~/.tableau-config.json` (shared with `update-sql`)
+2. `~/.tableau-config.json` (shared with `tableau-sql`)
 3. `~/sql-updater/config.json` (legacy standalone location)
 4. `~/.diff-sqls-config.json`
 
-**Recommended: extend your existing `~/.tableau-config.json`.** The Redshift user/password are read from the same `connection_credentials` block `update-sql` already uses; you only need to add a top-level `redshift` block with host/port/database. `update-sql` ignores the new block.
+**Recommended: extend your existing `~/.tableau-config.json`.** The Redshift user/password are read from the same `connection_credentials` block `tableau-sql` already uses; you only need to add a top-level `redshift` block with host/port/database. `tableau-sql` ignores the new block.
 
 ```json
 {
@@ -53,7 +53,7 @@ Auto-discovery order:
 
 `chmod 600 ~/.tableau-config.json` (you should already have done this).
 
-**Alternative: standalone config.** If you don't use `update-sql`, put everything in `~/.diff-sqls-config.json`:
+**Alternative: standalone config.** If you don't use `tableau-sql`, put everything in `~/.diff-sqls-config.json`:
 
 ```bash
 cat > ~/.diff-sqls-config.json <<'EOF'

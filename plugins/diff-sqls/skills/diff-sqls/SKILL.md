@@ -20,14 +20,14 @@ Trigger phrases:
 - Python 3.10+ on PATH.
 - A JSON config with Redshift creds. Auto-discovered from (in order):
   1. `$DIFF_SQLS_CONFIG` env var, if set
-  2. `~/.tableau-config.json` (shared with `update-sql`)
+  2. `~/.tableau-config.json` (shared with `tableau-sql`)
   3. `~/sql-updater/config.json` (legacy)
   4. `~/.diff-sqls-config.json`
 - The Python venv is bootstrapped on first use by `${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh` into `${CLAUDE_PLUGIN_DATA}/venv` and persists across plugin updates.
 
 The plugin's `userConfig` schema exists, but per the bi-plugin runtime model, those values do not reach the bash this skill runs. Use the config file. If no config is found, point the user at the plugin README's "Credentials setup" and stop.
 
-Recommended: extend the existing `~/.tableau-config.json` with a `redshift` block so both plugins share one creds file. user/password come from the same `connection_credentials` block `update-sql` already uses.
+Recommended: extend the existing `~/.tableau-config.json` with a `redshift` block so both plugins share one creds file. user/password come from the same `connection_credentials` block `tableau-sql` already uses.
 
 ```json
 {
