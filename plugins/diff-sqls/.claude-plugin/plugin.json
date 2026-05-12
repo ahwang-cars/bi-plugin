@@ -1,0 +1,36 @@
+{
+  "name": "diff-sqls",
+  "description": "Run two SQL scripts against Redshift and diff their result sets (row count, column aggregates, row-level set diff).",
+  "author": {
+    "name": "Cars BI"
+  },
+  "keywords": ["redshift", "sql", "diff", "validation", "bi"],
+  "userConfig": {
+    "redshift_host": {
+      "title": "Redshift host",
+      "type": "string",
+      "description": "Redshift cluster endpoint, e.g. dw.xyz.us-east-1.redshift.amazonaws.com"
+    },
+    "redshift_port": {
+      "title": "Redshift port",
+      "type": "string",
+      "description": "Defaults to 5439 if blank."
+    },
+    "redshift_database": {
+      "title": "Redshift database",
+      "type": "string",
+      "description": "Defaults to 'dw' if blank."
+    },
+    "redshift_user": {
+      "title": "Redshift username",
+      "type": "string",
+      "description": "Redshift username used to run both sides of the diff."
+    },
+    "redshift_password": {
+      "title": "Redshift password",
+      "type": "string",
+      "description": "Redshift password for the user above.",
+      "sensitive": true
+    }
+  }
+}

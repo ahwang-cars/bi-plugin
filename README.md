@@ -14,6 +14,7 @@ Each plugin under `plugins/` is built around a self-contained Python (or other-l
 | Plugin | What it does |
 |---|---|
 | `tableau-sql-updater` | Edit and validate Tableau Online Custom SQL / Initial SQL via REST API. |
+| `diff-sqls` | Run two SQL scripts against Redshift and diff their result sets (row count, column aggregates, row-level set diff). |
 
 See each plugin's `README.md` for setup details and prerequisites.
 

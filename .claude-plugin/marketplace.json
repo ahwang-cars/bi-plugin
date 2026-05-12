@@ -11,6 +11,13 @@
       "description": "Update and validate Tableau Online Custom SQL and Initial SQL via REST API, no Tableau Desktop round-trip.",
       "category": "data-tools",
       "keywords": ["tableau", "sql", "datasource", "redshift"]
+    },
+    {
+      "name": "diff-sqls",
+      "source": "./plugins/diff-sqls",
+      "description": "Run two SQL scripts against Redshift and diff their result sets (row count, column aggregates, row-level set diff).",
+      "category": "data-tools",
+      "keywords": ["redshift", "sql", "diff", "validation"]
     }
   ]
 }
