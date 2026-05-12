@@ -62,8 +62,8 @@ Standalone schema (if you don't have `~/.tableau-config.json` and don't want one
    - Two Initial SQL versions sharing a Custom SQL: `initial_v1.sql + custom.sql` vs `initial_v2.sql + custom.sql`
    - Initial-only, diffing a specific temp table: pass `--final-query "SELECT * FROM <temp>"`
 2. **Confirm labels.** Default labels are `A` and `B`. For version diffs, prefer `--label-a v1 --label-b v2` (or `old`/`new`) so the output reads cleanly.
-3. **Run the diff.** It prints row count, column aggregates, and (for ≤1000-row results) a row-level set diff.
-4. **Surface the verdict.** Exit 0 = full match; exit 1 = at least one aggregate or the row count differs. Don't paste the full markdown output back to the user — summarize the verdict and point at the section with the diffs.
+3. **Run the diff.** It prints row count, column aggregates, and (for ≤1000-row results) a row-level set diff. The same markdown is also auto-saved to a file (default: `diff-<labelA>-vs-<labelB>-<UTC-timestamp>.md` in cwd; override with `--output PATH`).
+4. **Surface the verdict.** Exit 0 = full match; exit 1 = at least one aggregate or the row count differs. Don't paste the full markdown output back to the user — summarize the verdict, point at the saved-file path (printed to stderr as `Saved diff report to: …`), and call out the section with the diffs if any. The saved file is what the user will paste into the ticket.
 
 ## Invocation pattern
 
@@ -134,7 +134,7 @@ Default is 1000. Raising it loads both result sets into Python memory and comput
 - **Temp tables don't cross sides.** Each side runs on its own connection. That's deliberate — running v1 and v2 sequentially in one connection would let v1's temp tables leak into v2.
 - **Column aggregates use side B's schema.** If the two queries return different column sets, side A's extras are silently ignored. A schema-drift check would be a useful follow-up.
 - **Row-level diff requires sortable first column.** The script does `ORDER BY 1` so the rows compare deterministically. If column 1 is non-comparable across rows, that step will fail.
-- **Sensitive data lives in your shell.** Output is markdown to stdout including potential PII. Don't paste full output into chat or tickets without scrubbing.
+- **Sensitive data lives in your shell *and* in the saved report file.** Output is markdown printed to stdout AND saved to disk (autosave), so PII in the result set lands on the user's filesystem. Don't paste full output into chat or tickets without scrubbing. The saved-file path is printed to stderr after the run.
 
 ## Troubleshooting
 

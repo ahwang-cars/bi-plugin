@@ -36,17 +36,48 @@ The `connection_credentials` block is the same one update-sql reads;
 `redshift` is a new top-level block it ignores. user/password may also live
 under "redshift" if you'd rather keep diff-sqls self-contained.
 
+Output: same markdown printed to stdout is also saved to a file. Default path is
+`diff-<labelA>-vs-<labelB>-<UTC-timestamp>.md` in cwd; override with `--output`.
+The saved file is the artifact to paste into a ticket as proof of validation.
+
 Exit codes: 0 if row count and every column aggregate matches, 1 otherwise.
 """
 
 import argparse
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 
 import redshift_connector
 import sqlparse
+
+
+class _Tee:
+    """Writer that fans writes out to multiple streams (e.g. stdout + a file).
+    Keeps real-time output so a crash mid-run still leaves a partial report."""
+
+    def __init__(self, *streams):
+        self._streams = streams
+
+    def write(self, s):
+        for st in self._streams:
+            st.write(s)
+        return len(s)
+
+    def flush(self):
+        for st in self._streams:
+            st.flush()
+
+
+def _slug(s):
+    return re.sub(r"[^A-Za-z0-9]+", "_", s).strip("_") or "x"
+
+
+def _default_output_path(label_a, label_b):
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return f"diff-{_slug(label_a)}-vs-{_slug(label_b)}-{ts}.md"
 
 
 # Auto-discovery order. Shared with update-sql so users only maintain
@@ -272,6 +303,9 @@ def main():
     p.add_argument("--row-diff-limit", type=int, default=1000,
                    help="Skip row-level set diff when either side exceeds this row count (default: 1000)")
     p.add_argument("--config", help="Path to a JSON config with Redshift creds (alternative to env vars)")
+    p.add_argument("--output", metavar="PATH",
+                   help="Write the markdown report here. Defaults to "
+                        "diff-<labelA>-vs-<labelB>-<UTC-timestamp>.md in cwd.")
     args = p.parse_args()
 
     for path in [*args.a, *args.b]:
@@ -280,24 +314,37 @@ def main():
 
     creds = load_creds(args.config)
 
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    print(f"## Diff: `{args.label_a}` vs `{args.label_b}`")
-    print(f"- {args.label_a}: {' + '.join(args.a)}")
-    print(f"- {args.label_b}: {' + '.join(args.b)}")
-    if args.final_query:
-        print(f"- Final query (both sides): `{args.final_query}`")
-    print(f"_Run at {now}_\n")
-
-    conn_a = connect(creds)
-    conn_b = connect(creds)
+    out_path = os.path.abspath(args.output or _default_output_path(args.label_a, args.label_b))
+    out_dir = os.path.dirname(out_path)
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
+    out_file = open(out_path, "w")
+    real_stdout = sys.stdout
+    sys.stdout = _Tee(real_stdout, out_file)
     try:
-        query_a = prepare_side(conn_a, args.a, args.final_query)
-        query_b = prepare_side(conn_b, args.b, args.final_query)
-        ok = compare(conn_a, query_a, args.label_a, conn_b, query_b, args.label_b,
-                     args.row_diff_limit)
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        print(f"## Diff: `{args.label_a}` vs `{args.label_b}`")
+        print(f"- {args.label_a}: {' + '.join(args.a)}")
+        print(f"- {args.label_b}: {' + '.join(args.b)}")
+        if args.final_query:
+            print(f"- Final query (both sides): `{args.final_query}`")
+        print(f"_Run at {now}_\n")
+
+        conn_a = connect(creds)
+        conn_b = connect(creds)
+        try:
+            query_a = prepare_side(conn_a, args.a, args.final_query)
+            query_b = prepare_side(conn_b, args.b, args.final_query)
+            ok = compare(conn_a, query_a, args.label_a, conn_b, query_b, args.label_b,
+                         args.row_diff_limit)
+        finally:
+            conn_a.close()
+            conn_b.close()
     finally:
-        conn_a.close()
-        conn_b.close()
+        sys.stdout = real_stdout
+        out_file.close()
+
+    print(f"Saved diff report to: {out_path}", file=sys.stderr)
     sys.exit(0 if ok else 1)
 
 

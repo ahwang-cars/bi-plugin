@@ -139,11 +139,15 @@ python scripts/diff_sqls.py \
 
 ## Output
 
-Markdown to stdout. Three sections:
+Markdown printed to stdout **and** saved to a file (the file is the artifact you paste into a ticket as proof of validation). Three sections:
 
 1. **Row count** — both sides + MATCH/DIFF.
 2. **Column aggregates** — total rows, distinct count, and null count per column on each side. Side B's schema is canonical; if the columns differ between sides, side A's extras are dropped.
 3. **Row-level diff** — set difference of the two result sets. Skipped automatically when either side exceeds `--row-diff-limit` (default 1000) because the diff happens in Python memory.
+
+Each report opens with a header recording timestamp, the input files for each side, and the `--final-query` if overridden — so a reviewer reading the file cold knows exactly what was compared.
+
+**Output path:** defaults to `diff-<labelA>-vs-<labelB>-<UTC-timestamp>.md` in the current working directory. Override with `--output PATH` (e.g. `--output diffs/EASD-2288.md`). The file is opened before the first query runs, so a partial report survives mid-run failures.
 
 Exit code: `0` if row count and every column aggregate match, `1` otherwise. Useful in CI/scripts.
 

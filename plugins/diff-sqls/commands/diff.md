@@ -42,6 +42,8 @@ PY=$(${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh)
 
 ## Output
 
-Markdown to stdout with three sections: row count, column aggregates (distinct + null counts per column), and a row-level set diff for small result sets. Exit 0 if everything matches, 1 otherwise.
+Markdown to stdout **and** auto-saved to a file (the artifact you paste into the ticket as proof of validation). Three sections: row count, column aggregates (distinct + null counts per column), and a row-level set diff for small result sets. Exit 0 if everything matches, 1 otherwise.
+
+Default save path: `diff-<labelA>-vs-<labelB>-<UTC-timestamp>.md` in cwd. Override with `--output PATH` in the pass-through args (e.g. `--output diffs/EASD-2288.md`). The saved-file path is printed to stderr after the run.
 
 If the script errors with "Last statement … is not a SELECT/WITH," the files only set up temp tables — re-run with `--final-query "SELECT ... FROM <temp_table>"`, or pair the file with a Custom SQL file via the skill's multi-file form.
