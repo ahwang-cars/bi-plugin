@@ -24,14 +24,11 @@ On install, Claude prompts for the `userConfig` keys listed below. The Python ve
 
 ### Credentials setup (required)
 
-The Claude Code harness does not currently propagate plugin `userConfig` env vars into the bash that slash commands run, so creds are read from a JSON config file instead.
-
-Auto-discovery order:
+Creds are read from a JSON config file. Auto-discovery order:
 
 1. `$DIFF_SQLS_CONFIG` env var, if set
 2. `~/.tableau-config.json` (shared with `tableau-sql`)
-3. `~/sql-updater/config.json` (legacy standalone location)
-4. `~/.diff-sqls-config.json`
+3. `~/.diff-sqls-config.json`
 
 **Recommended: extend your existing `~/.tableau-config.json`.** The Redshift user/password are read from the same `connection_credentials` block `tableau-sql` already uses; you only need to add a top-level `redshift` block with host/port/database. `tableau-sql` ignores the new block.
 
@@ -71,16 +68,6 @@ chmod 600 ~/.diff-sqls-config.json
 ```
 
 Env vars (`REDSHIFT_HOST`/`PORT`/`DATABASE`/`USER`/`PASSWORD`) fill any gaps the config file doesn't supply. Config values take precedence when both are present.
-
-### userConfig (cosmetic — see note above)
-
-| Key | Sensitive | Notes |
-|---|---|---|
-| `redshift_host` | no | Redshift cluster endpoint |
-| `redshift_port` | no | Defaults to 5439 |
-| `redshift_database` | no | Defaults to `dw` |
-| `redshift_user` | no | Redshift username |
-| `redshift_password` | yes | Redshift password |
 
 ### What you get
 

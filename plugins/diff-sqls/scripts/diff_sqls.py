@@ -23,8 +23,7 @@ Typical patterns:
 Credentials are auto-discovered from (in order):
     1. --config <path>, if given
     2. ~/.tableau-config.json   (shared with tableau-sql)
-    3. ~/sql-updater/config.json
-    4. ~/.diff-sqls-config.json
+    3. ~/.diff-sqls-config.json
 Env vars (REDSHIFT_HOST/PORT/DATABASE/USER/PASSWORD) fill any gaps.
 
 Schema in the config file:
@@ -86,7 +85,6 @@ def _default_output_path(label_a, label_b):
 # top-level `redshift` block that tableau-sql ignores.
 DEFAULT_CONFIG_PATHS = [
     os.path.expanduser("~/.tableau-config.json"),
-    os.path.expanduser("~/sql-updater/config.json"),
     os.path.expanduser("~/.diff-sqls-config.json"),
 ]
 

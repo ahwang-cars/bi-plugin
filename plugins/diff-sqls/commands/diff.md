@@ -19,7 +19,7 @@ If `$1` or `$2` is missing, ask the user and exit.
 
 ```bash
 # Self-bootstrap plugin paths. Creds auto-discover from
-# ~/.tableau-config.json → ~/sql-updater/config.json → ~/.diff-sqls-config.json
+# ~/.tableau-config.json → ~/.diff-sqls-config.json
 # (or set DIFF_SQLS_CONFIG / REDSHIFT_* env vars to override).
 export CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT}"
 export CLAUDE_PLUGIN_DATA="${HOME}/.claude/plugins/data/bi-plugin/diff-sqls"

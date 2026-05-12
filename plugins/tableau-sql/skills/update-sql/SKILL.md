@@ -12,8 +12,7 @@ Programmatically edit a Tableau Online data source's Custom SQL or Initial SQL v
 - Python 3.10+ on PATH.
 - A `config.json` with Tableau PAT pairs and Redshift creds at one of these locations (checked in order):
   1. `$TABLEAU_CONFIG` env var, if set
-  2. `~/.tableau-config.json` (recommended)
-  3. `~/sql-updater/config.json` (legacy standalone-CLI location)
+  2. `~/.tableau-config.json`
 - The Python venv is bootstrapped on first use by `${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.sh` into `${CLAUDE_PLUGIN_DATA}/venv` and persists across plugin updates.
 
 The plugin's `userConfig` schema exists but its values do **not** currently reach the bash that this skill runs (Claude Code harness limitation). Use the `config.json` instead. If no config file is found, point the user at the plugin README's "Credentials setup" section and stop.
@@ -62,7 +61,7 @@ export CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT}"
 export CLAUDE_PLUGIN_DATA="${HOME}/.claude/plugins/data/bi-plugin/tableau-sql"
 CONFIG="${TABLEAU_CONFIG:-}"
 if [ -z "$CONFIG" ]; then
-  for c in "$HOME/.tableau-config.json" "$HOME/sql-updater/config.json"; do
+  for c in "$HOME/.tableau-config.json"; do
     [ -f "$c" ] && CONFIG="$c" && break
   done
 fi
@@ -169,7 +168,7 @@ Marker between sections must be `-- CUSTOM SQL BELOW --`. Output: `initial_sql.s
 - **Tableau doubles `<` and `>` in stored SQL.** The `.tds` XML inside a `.tdsx` stores `<>` as `<<>>`, `<=` as `<<=`, `>=` as `>>=`, etc. Tableau Desktop halves them on display. The script handles this transparently — `dump-sql`/`inspect-sql` halve before showing, `--custom-sql-file`/`validate-sql` double before writing/comparing. Edge case: Redshift bit-shift operators `<<`/`>>` round-trip ambiguously through this encoding (rare in BI queries; flag if you hit it).
 - **`--switch-to-table` changes the physical layer only.** The logical-table caption (e.g. "Custom SQL Query") persists in the UI even after switching — this is cosmetic. Renaming the caption requires Tableau Desktop (it rewrites column bindings safely).
 - **Post-publish validation is automatic** when `--custom-sql-file` / `--initial-sql-file` is provided. The script re-downloads the live datasource and diffs it against the input file, exiting non-zero on mismatch. `--no-validate` skips it. `--validate-sql` still exists for standalone re-checks against a committed ticket file.
-- **Credentials live in `~/.tableau-config.json`** (or `$TABLEAU_CONFIG` / `~/sql-updater/config.json`). `chmod 600`, never commit, never paste into shell history.
+- **Credentials live in `~/.tableau-config.json`** (or `$TABLEAU_CONFIG`). `chmod 600`, never commit, never paste into shell history.
 
 ## Troubleshooting
 

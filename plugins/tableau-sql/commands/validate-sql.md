@@ -22,7 +22,7 @@ export CLAUDE_PLUGIN_DATA="${HOME}/.claude/plugins/data/bi-plugin/tableau-sql"
 
 CONFIG="${TABLEAU_CONFIG:-}"
 if [ -z "$CONFIG" ]; then
-  for c in "${HOME}/.tableau-config.json" "${HOME}/sql-updater/config.json"; do
+  for c in "${HOME}/.tableau-config.json"; do
     [ -f "$c" ] && CONFIG="$c" && break
   done
 fi

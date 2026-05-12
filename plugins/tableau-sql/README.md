@@ -19,32 +19,13 @@ Two ways to use it: as a Claude Code plugin (smooth UX) or as a standalone Pytho
 /plugin install tableau-sql@bi-plugin
 ```
 
-On install, Claude prompts for the `userConfig` values listed below. The Python venv is auto-bootstrapped on first use.
+The Python venv is auto-bootstrapped on first use. Credentials are read from a JSON config file (see below) — `userConfig` env injection isn't reliable in slash-command runtime, so don't depend on the `/plugin` install prompts.
 
 ### Credentials setup (required)
 
-The Claude Code harness does not currently propagate plugin `userConfig` env vars into the bash that slash commands run, so each command's Run block reads creds from a JSON config file instead. The schema matches the standalone-CLI config (see Option B below).
+Slash commands read creds from a JSON config file at `~/.tableau-config.json` (or `$TABLEAU_CONFIG` if set). Create the file with the schema shown under "Option B → Via a config.json" below and `chmod 600` it.
 
-Lookup order:
-
-1. `$TABLEAU_CONFIG` env var, if set
-2. `~/.tableau-config.json`
-3. `~/sql-updater/config.json` (legacy location — kept for back-compat with the pre-plugin standalone setup)
-
-Create the file at one of those paths (and `chmod 600`). One PAT pair per site (cars and dealertools) — generate each in the corresponding Tableau Online site at Settings → My Account Settings → Personal Access Tokens. Server URL is hardcoded (`https://us-west-2b.online.tableau.com`). The skill asks which site to target on each invocation. See the example JSON under "Option B → Via a config.json" further down.
-
-### userConfig (cosmetic — see note above)
-
-The `/plugin` config UI exposes these keys, but the values currently are not reaching the slash command runtime. They're listed here for reference and to keep the schema accurate:
-
-| Key | Sensitive | Notes |
-|---|---|---|
-| `tableau_token_name_cars` | no | PAT name for the cars site |
-| `tableau_token_secret_cars` | yes | PAT secret for the cars site |
-| `tableau_token_name_dealertools` | no | PAT name for the dealertools site |
-| `tableau_token_secret_dealertools` | yes | PAT secret for the dealertools site |
-| `redshift_user` | no | Redshift username embedded into the .tdsx |
-| `redshift_password` | yes | Redshift password embedded into the .tdsx |
+One PAT pair per site (cars and dealertools) — generate each in the corresponding Tableau Online site at Settings → My Account Settings → Personal Access Tokens. The skill asks which site to target on each invocation.
 
 ### What you get
 
@@ -146,7 +127,7 @@ What you give up vs. Option A: the auto-invoked workflow (Claude makes decisions
 
 ## Troubleshooting
 
-- **"Provide credentials via --config..."** or **"No PAT configured for site 'cars'"** — `~/.tableau-creds` is missing or doesn't export the expected variables. See "Credentials setup" above.
+- **"Provide credentials via --config..."** or **"No PAT configured for site 'cars'"** — `~/.tableau-config.json` is missing or the schema doesn't match. See "Credentials setup" above.
 - **"CLAUDE_PLUGIN_DATA env var is required"** — you're running `bootstrap.sh` directly outside a slash command. Use the slash commands instead, or set both `CLAUDE_PLUGIN_ROOT` and `CLAUDE_PLUGIN_DATA` manually before running.
 - **"No datasource found with name: ..."** — the name lookup is case-insensitive but otherwise exact. If ambiguous across projects, use `--datasource-id` (find the UUID in the Tableau Online URL when viewing the datasource).
 - **`TypeError: unsupported operand type(s) for |`** during `tableauserverclient` import — your venv is using Python 3.9. Recreate with `python3.12 -m venv venv`.
